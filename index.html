@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pomora - Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+      integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" type="text/css" href="css/styles.css" />
+  </head>
+  <body>
+
+    <div class="container-head">
+      <header class="navbar" role="banner">
+        <div class="logo"><span class="logo-icon">✓</span> Pomora</div>
+        <nav class="nav-actions" aria-label="Primary navigation">
+          <button type="button" class="nav-btn">
+            <span class="icon"
+              ><i class="fa fa-bar-chart" aria-hidden="true"></i
+            ></span>
+            <span class="icon_text">Report</span>
+          </button>
+          <button type="button" class="nav-btn">
+            <span class="icon"
+              ><i class="fa fa-cog" aria-hidden="true"></i
+            ></span>
+            <span class="icon_text">Setting</span>
+          </button>
+          <button type="button" class="nav-btn login-btn">
+            <span class="icon"
+              ><i class="fa fa-user-circle" aria-hidden="true"></i
+            ></span>
+            <span class="icon_text">Sign In</span>
+          </button>
+          <button type="button" class="more-btn" aria-label="More options">
+            ⋮
+          </button>
+        </nav>
+      </header>
+
+      <div class="progress-bar-bg" aria-hidden="true"></div>
+
+      <main id="main-content" class="main-container">
+        <section class="timer-card" aria-labelledby="timer-heading">
+          <div class="timer-modes" role="tablist" aria-label="Timer mode">
+            <button type="button" class="mode-btn active" aria-selected="true">
+              Pomodoro
+            </button>
+            <button type="button" class="mode-btn">Short Break</button>
+            <button type="button" class="mode-btn">Long Break</button>
+          </div>
+
+          <div id="timer-heading" class="timer-display" role="status" aria-live="polite">
+            25:00
+          </div>
+
+          <button type="button" class="start-btn">START</button>
+        </section>
+
+        <div class="task-status">
+          <span class="task-number">#2</span>
+          <p class="task-message">Time to focus!</p>
+        </div>
+
+        <section class="tasks-section" aria-labelledby="tasks-heading">
+          <div class="tasks-header">
+            <h2 id="tasks-heading">Tasks</h2>
+            <button type="button" class="more-btn-v" aria-label="More task options">
+              ⋮
+            </button>
+          </div>
+
+          <button type="button" class="add-task-btn">
+            <span class="plus-icon" aria-hidden="true">+</span>
+            Add Task
+          </button>
+        </section>
+      </main>
+    </div>
+
+    <section class="container hero-section" aria-labelledby="hero-title">
+      <h1 id="hero-title" class="heroimage_title">
+        An online Pomodoro Technique Timer specially made for students to boost
+        productivity
+      </h1>
+    </section>
+
+    <section class="catchcopy container" aria-labelledby="what-is-title">
+      <h2 id="what-is-title" class="catchcopy_title">What is Pomora?</h2>
+      <p class="catchcopy_text">
+        Pomora is a minimalist, distraction-free Pomodoro timer tailored
+        specifically for modern students. Balancing demanding study schedules,
+        deep focus, and necessary rest can be exhausting. Pomora helps you break
+        your study sessions down into manageable intervals, training your brain
+        to focus cleanly without burning out.
+      </p>
+    </section>
+
+    <section class="catchcopy container" aria-labelledby="why-title">
+      <h2 id="why-title" class="catchcopy_title">Why Pomora Was Built</h2>
+      <p class="catchcopy_text">
+        Most online timers are cluttered with ads, complex configurations, and
+        noisy interfaces that defeat the purpose of "deep focus." Pomora was
+        created to strip away the noise. By combining an intentional, warm
+        aesthetic with essential task tracking, it creates a psychological safe
+        space that gently encourages you to begin your next study sprint.
+      </p>
+    </section>
+
+    <section class="catchcopy container" aria-labelledby="how-to-title">
+      <h2 id="how-to-title" class="catchcopy_title">How to use the Pomodoro Timer?</h2>
+      <ol class="catchcopy_list">
+        <li>
+          <span class="bold">Define Your Tasks: </span>List out what
+          assignments, study blocks, or readings you need to accomplish today.
+        </li>
+        <li>
+          <span class="bold">Set the Interval: </span>Select your Pomodoro
+          session (traditionally 25 minutes) and press START to begin focusing
+          intensely.
+        </li>
+        <li>
+          <span class="bold">Protect Your Attention: </span>Work diligently
+          without checking social media, emails, or tabs until the timer goes
+          off.
+        </li>
+        <li>
+          <span class="bold">Take a Short Break: </span>When the alarm rings,
+          step away from your screen for a 5-minute breather to recharge your
+          cognitive battery.
+        </li>
+        <li>
+          <span class="bold">Iterate the Cycle: </span>Repeat this process four
+          times consecutively to complete a full study round.
+        </li>
+        <li>
+          <span class="bold">Enjoy a Long Rest: </span>After four full
+          Pomodoros, reward yourself with a long 15–30 minute break before
+          diving back into your work.
+        </li>
+      </ol>
+    </section>
+
+    <section class="catchcopy container" aria-labelledby="features-title">
+      <h2 id="features-title" class="catchcopy_title">Features Built for Students</h2>
+      <p class="catchcopy_text">
+        Beyond just a simple countdown clock, Pomora features persistent task
+        tracking, dynamic ambient visual states that shift color palette
+        contexts smoothly between focus blocks and break periods, and minimalist
+        audio feedback cues designed not to startle you out of your flow state.
+      </p>
+    </section>
+
+    <footer class="footer" role="contentinfo">
+      <div class="footer_sitemap" role="navigation" aria-label="Footer navigation">
+        <a href="#">HOME</a>
+        <a href="#">TERMS</a>
+        <a href="#">PRIVACY</a>
+        <a href="#">CONTACT</a>
+      </div>
+
+      <div class="footer_smlink">
+        <a href="#" target="_blank" rel="noopener" aria-label="Facebook">
+          <i class="fa fa-facebook-square" aria-hidden="true"></i>
+        </a>
+        <a href="#" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <i class="fa fa-linkedin-square" aria-hidden="true"></i>
+        </a>
+        <a href="#" target="_blank" rel="noopener" aria-label="GitHub">
+          <i class="fa fa-github-square" aria-hidden="true"></i>
+        </a>
+      </div>
+
+      <div class="footer_me">
+        Designed & Built ❤️ <span>Joseph Ayanwuyi</span>
+      </div>
+
+      <div class="footer_copyright">
+        &copy; 2026 Pomora. All rights reserved.
+      </div>
+    </footer>
+  </body>
+</html>
