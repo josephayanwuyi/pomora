@@ -1,0 +1,801 @@
+/* Add smooth transition to the body */
+.container-head {
+    /* ... keep your existing body styles ... */
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* New theme modifier classes for smooth state changes */
+.container-head.theme-pomodoro {
+    --bg-color: #ba4949;
+    background-color: #ba4949;
+}
+
+.container-head.theme-short {
+    --bg-color: #388e3c; /* Elegant, calming green for short breaks */
+    background-color: #388e3c;
+}
+
+.container-head.theme-long {
+    --bg-color: #3949ab; /* Deep, relaxing blue for long breaks */
+    background-color: #3949ab;
+}
+
+/* Ensure the layout elements using var(--bg-color) dynamically transition too */
+.start-btn {
+    /* ... keep your existing styles ... */
+    transition: color 0.4s ease, transform 0.1s ease;
+}
+
+/* --- Injected Task Items Layout styling --- */
+.tasks-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.task-item {
+    background-color: #ffffff;
+    color: #333333;
+    padding: 14px 16px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 4px;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.task-item:hover {
+    transform: translateY(-1px);
+    box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 8px;
+}
+
+.task-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.check-icon {
+    font-size: 18px;
+    color: var(--bg-color);
+    font-weight: 700;
+}
+
+.task-item-text {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* Delete cross mark design styling */
+.task-delete-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #999999;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.task-delete-btn:hover {
+    color: #ff3333;
+}
+
+/* --- Completed State Modifiers --- */
+.task-item.completed {
+    opacity: 0.55;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.task-item.completed .task-item-text {
+    text-decoration: line-through;
+    color: #777777;
+}
+
+.task-item.completed .check-icon {
+    color: #4caf50; /* Changes checkbox token indicator green on completion */
+}
+
+
+/* --- Inline Task Input Creation Tray Form --- */
+.task-form-card {
+    background-color: #ffffff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 12px;
+    margin-bottom: 16px;
+    display: none; /* Hidden by default, toggled via JS */
+    flex-direction: column;
+    gap: 14px;
+    animation: slideDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth entry slide animation */
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.task-input-field {
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 12px 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333333;
+    font-family: inherit;
+    border-bottom: 2px solid #eeeeee;
+    transition: border-color 0.2s ease;
+}
+
+.task-input-field:focus {
+    border-bottom-color: var(--bg-color); /* Highlight color match matching current background theme */
+}
+
+.task-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.task-form-btn {
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.cancel-btn {
+    background-color: transparent;
+    color: #888888;
+}
+
+.cancel-btn:hover {
+    color: #555555;
+    background-color: #f5f5f5;
+}
+
+.save-btn {
+    background-color: #555555; /* Default neutral gray, overridden cleanly */
+    color: #ffffff;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 4px;
+}
+
+/* Make the save button match the current application state color implicitly */
+.container-head.theme-pomodoro .save-btn { background-color: #ba4949; }
+.container-head.theme-short .save-btn { background-color: #388e3c; }
+.container-head.theme-long .save-btn { background-color: #3949ab; }
+
+.save-btn:hover {
+    opacity: 0.9;
+}
+
+/* --- Success Completion State Banner --- */
+.tasks-success-banner {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 16px 20px;
+    display: none; /* Controlled dynamically by JavaScript state checks */
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    margin-bottom: 16px;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.success-message {
+    color: #222222;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.clear-tasks-btn {
+    background-color: #4db6ac; /* Clean slate green backdrop from your screenshot */
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 4px;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.clear-tasks-btn:hover {
+    background-color: #00897b;
+}
+
+.clear-tasks-btn:active {
+    transform: scale(0.97);
+}
+
+/* --- Analytics Card Dashboard Box --- */
+.summary-section {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.analytics-card {
+    background-color: rgba(255, 255, 255, 0.1); /* Blends elegantly with whatever theme color background is active */
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.analytics-card h3 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 16px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.analytics-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.analytics-item {
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.analytics-value {
+    display: block;
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.analytics-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Fix text sizing context for active tasks header elements */
+.task-number {
+    display: inline-block;
+    background-color: rgba(0, 0, 0, 0.15);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+/* --- Modal Overlay Layout --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px); /* Sleek modern glass blur effect */
+    z-index: 1000;
+    display: none; /* Controlled dynamically by JavaScript toggles */
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+/* Open Animation modifier triggers */
+.modal-overlay.show {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-card {
+    background-color: #ffffff;
+    width: 440px;
+    border-radius: 12px;
+    padding: 24px;
+    color: #333333;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 10px 30px;
+    transform: scale(0.92);
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-overlay.show .modal-card {
+    transform: scale(1);
+}
+
+/* Header Context components */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eeeeee;
+    padding-bottom: 12px;
+}
+
+.modal-header h2 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #444444;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #aaaaaa;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.modal-close-btn:hover {
+    color: #333333;
+}
+
+/* Mini Stats Grid Dashboard inside modal */
+.modal-stats-grid {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.modal-stat-box {
+    flex: 1;
+    background-color: #f7f9fa;
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+    border: 1px solid #eef2f3;
+}
+
+.modal-stat-num {
+    display: block;
+    font-size: 24px;
+    font-weight: 800;
+    color: #222222;
+}
+
+.modal-stat-lbl {
+    font-size: 11px;
+    font-weight: 700;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- CSS Micro Bar Chart System --- */
+.chart-wrapper {
+    background-color: #f7f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #eef2f3;
+}
+
+.chart-wrapper h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #666666;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.bar-chart {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    height: 140px;
+    padding-top: 10px;
+}
+
+.chart-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80px;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.bar-fill-wrapper {
+    width: 24px;
+    height: 100px;
+    background-color: #e0e6ed;
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.bar-fill {
+    width: 100%;
+    border-radius: 4px;
+    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.focus-bar { background-color: #ba4949; }
+.rest-bar { background-color: #388e3c; }
+
+.bar-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #777777;
+    margin-top: 8px;
+}
+
+/* --- Settings Modal Overrides --- */
+.settings-card {
+    width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.settings-section-block {
+    border-bottom: 1px solid #eeeeee;
+    padding: 16px 0;
+}
+
+.settings-section-block:last-of-type {
+    border-bottom: none;
+}
+
+.settings-section-block h3 {
+    font-size: 14px;
+    color: #777777;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+/* Time inputs field grids layout formatting */
+.time-inputs-grid {
+    display: flex;
+    gap: 12px;
+}
+
+.input-group {
+    flex: 1;
+}
+
+.input-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #888888;
+    margin-bottom: 6px;
+}
+
+.input-group input, 
+.inline-num-input {
+    width: 100%;
+    background-color: #f1f3f5;
+    border: 1px solid #e9ecef;
+    padding: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 6px;
+    color: #333333;
+    outline: none;
+}
+
+.inline-num-input {
+    width: 70px;
+    text-align: center;
+    padding: 6px;
+}
+
+/* Row-by-row configurations layout alignments */
+.toggle-setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.toggle-setting-row:last-child {
+    margin-bottom: 0;
+}
+
+.toggle-setting-row label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #444444;
+}
+
+/* Custom Dropdown Styling */
+.sound-picker-row {
+    display: flex;
+    gap: 10px;
+}
+
+.settings-select {
+    flex: 1;
+    background-color: #f1f3f5;
+    border: 1px solid #e9ecef;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333333;
+    outline: none;
+    cursor: pointer;
+}
+
+.test-sound-btn, 
+.notify-perm-btn {
+    background-color: #e9ecef;
+    border: none;
+    padding: 0 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #495057;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.test-sound-btn:hover, 
+.notify-perm-btn:hover {
+    background-color: #dee2e6;
+}
+
+/* Notification permission bar layout details */
+.notification-setup-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-setup-row h4 {
+    font-size: 14px;
+    color: #444444;
+}
+
+.notification-setup-row p {
+    font-size: 12px;
+    color: #888888;
+    margin-top: 2px;
+}
+
+.notify-perm-btn.granted {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    cursor: default;
+}
+
+/* Form Submission execution master layout control button */
+.settings-save-master-btn {
+    width: 100%;
+    border: none;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    border-radius: 8px;
+    margin-top: 15px;
+    cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px;
+    transition: opacity 0.15s ease;
+}
+
+.container-head.theme-pomodoro .settings-save-master-btn { background-color: #ba4949; }
+.container-head.theme-short .settings-save-master-btn { background-color: #388e3c; }
+.container-head.theme-long .settings-save-master-btn { background-color: #3949ab; }
+
+.settings-save-master-btn:hover {
+    opacity: 0.95;
+}
+
+/* Simple iOS style slide toggle check design checkbox option scaling */
+.custom-toggle {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* --- Authentication Modal Layout Customizations --- */
+.auth-card {
+    width: 400px;
+    padding: 32px 24px;
+    text-align: center;
+    position: relative;
+}
+
+.auth-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    font-size: 24px;
+}
+
+.auth-brand-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.auth-brand-header h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #444444;
+    letter-spacing: -0.5px;
+}
+
+.auth-brand-header .logo-icon {
+    background-color: var(--bg-color);
+    color: #ffffff;
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+    transition: background-color 0.4s ease;
+}
+
+/* Auth Dynamic Switching Multi-views Handling */
+.auth-view-block {
+    display: none;
+    flex-direction: column;
+    animation: fadeInAuth 0.2s ease-in-out;
+}
+
+.auth-view-block.active {
+    display: flex;
+}
+
+@keyframes fadeInAuth {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #666666;
+    margin-bottom: 20px;
+}
+
+/* Simulated Google OAuth Button Interaction Style */
+.google-auth-btn {
+    width: 100%;
+    background-color: #ffffff;
+    border: 1px solid #dcdcdc;
+    color: #555555;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background-color 0.15s ease;
+}
+
+.google-auth-btn:hover {
+    background-color: #f8f9fa;
+}
+
+.g-icon {
+    font-weight: 900;
+    color: #4285f4; /* Flat Google Brand Blue Identity color */
+}
+
+/* Mid-form separator line context elements */
+.auth-divider {
+    width: 100%;
+    text-align: center;
+    border-bottom: 1px solid #eeeeee;
+    line-height: 0.1em;
+    margin: 20px 0;
+}
+
+.auth-divider span {
+    background: #ffffff;
+    padding: 0 10px;
+    font-size: 12px;
+    color: #aaaaaa;
+    font-weight: 600;
+}
+
+/* Forms input structure elements rows styling */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.auth-input-group {
+    text-align: left;
+}
+
+.auth-input-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #999999;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+}
+
+.auth-input-group input {
+    width: 100%;
+    background-color: #f8f9fa;
+    border: 1px solid #eef2f3;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    color: #333333;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.auth-input-group input:focus {
+    border-color: #b0b0b0;
+}
+
+/* Master full submission form click button action control */
+.auth-submit-master-btn {
+    width: 100%;
+    border: none;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    border-radius: 6px;
+    margin-top: 8px;
+    cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 4px;
+    transition: background-color 0.4s ease, opacity 0.15s ease;
+}
+
+.container-head.theme-pomodoro .auth-submit-master-btn { background-color: #ba4949; }
+.container-head.theme-short .auth-submit-master-btn { background-color: #388e3c; }
+.container-head.theme-long .auth-submit-master-btn { background-color: #3949ab; }
+
+.auth-submit-master-btn:hover {
+    opacity: 0.95;
+}
+
+/* Footer layout links styling references toggling cards panel view states */
+.auth-switch-prompt {
+    font-size: 13px;
+    color: #777777;
+    margin-top: 24px;
+    font-weight: 500;
+}
+
+.auth-toggle-view-link {
+    background: none;
+    border: none;
+    color: var(--bg-color);
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0 2px;
+    font-family: inherit;
+    font-size: 13px;
+    transition: color 0.4s ease;
+}

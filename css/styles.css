@@ -1,541 +1,687 @@
 /* --- CSS Reset & Variables --- */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 :root {
-    --bg-color: #ba4949;
-    --card-bg: rgba(255, 255, 255, 0.1);
-    --card-bg-hover: rgba(255, 255, 255, 0.2);
-    --text-main: #ffffff;
-    --text-muted: rgba(255, 255, 255, 0.7);
-    --surface-dark: #111111;
-    --surface-muted: #222222;
-    --surface-light: #888888;
-    --font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  --bg-color: #ba4949;
+  --card-bg: rgba(255, 255, 255, 0.1);
+  --card-bg-hover: rgba(255, 255, 255, 0.2);
+  --text-main: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.7);
+  --surface-dark: #111111;
+  --surface-muted: #222222;
+  --surface-light: #888888;
+  --font-family:
+    "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol";
 }
 
 body {
-    font-family: var(--font-family);
-    color: var(--text-main);
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
+  font-family: var(--font-family);
+  color: var(--text-main);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
 .more-btn,
 .more-btn-v {
-    cursor: pointer;
-    transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    color 0.2s ease;
 }
 
 button {
-    font-family: inherit;
+  font-family: inherit;
 }
 
 /* --- Container Framework --- */
 .container-head {
-    background-color: var(--bg-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    padding-bottom: 80px;
+  background-color: var(--bg-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding-bottom: 80px;
+   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .container {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 20px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 /* --- Navbar Styles --- */
 .navbar {
-    width: 620px;
-    height: 60px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 40px;
+  width: 620px;
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
 }
 
 .logo {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  cursor: pointer;
 }
 
 .logo-icon {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
 }
 
 .nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .nav-btn,
 .more-btn,
 .more-btn-v {
-    background-color: var(--card-bg);
-    border: none;
-    color: var(--text-main);
-    border-radius: 4px;
+  background-color: var(--card-bg);
+  border: none;
+  color: var(--text-main);
+  border-radius: 4px;
 }
 
 .nav-btn {
-    padding: 6px 12px;
-    font-size: 13px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .more-btn {
-    font-size: 16px;
-    padding: 4px 10px;
+  font-size: 16px;
+  padding: 4px 10px;
 }
 
 .more-btn-v {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-btn:hover,
 .more-btn:hover,
 .more-btn-v:hover {
-    background-color: var(--card-bg-hover);
+  background-color: var(--card-bg-hover);
 }
 
 /* --- Main Layout Container --- */
 .main-container {
-    width: 480px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* --- Progress Line --- */
 .progress-bar-bg {
-    width: 100%;
-    max-width: 620px;
-    height: 1px;
-    background-color: rgba(0, 0, 0, 0.1);
-    margin: -30px 0 30px;
+  width: 100%;
+  max-width: 620px;
+  height: 2px;
+  background-color: rgba(0, 0, 0, 0.1);
+  margin: -30px 0 30px;
+  overflow: hidden;
+}
+
+/* The active inner fluid tracking indicator */
+.progress-bar-fill {
+    height: 100%;
+    width: 100%; /* Starts fully filled */
+    background-color: #ffffff;
+    border-radius: 2px;
+    /* Smoothly transitions the width property every second when JS updates it */
+    transition: width 1s linear; 
 }
 
 /* --- Timer Card Styles --- */
 .timer-card {
-    background-color: var(--card-bg);
-    width: 100%;
-    border-radius: 6px;
-    padding: 24px 0 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  background-color: var(--card-bg);
+  width: 100%;
+  border-radius: 6px;
+  padding: 24px 0 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .timer-modes {
-    display: flex;
-    gap: 12px;
+  display: flex;
+  gap: 12px;
 }
 
 .mode-btn {
-    background: none;
-    border: none;
-    color: var(--text-main);
-    font-size: 16px;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.2s ease;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
 }
 
 .mode-btn:hover,
 .mode-btn.active {
-    opacity: 1;
+  opacity: 1;
 }
 
 .mode-btn.active {
-    background-color: rgba(0, 0, 0, 0.15);
-    font-weight: 700;
+  background-color: rgba(0, 0, 0, 0.15);
+  font-weight: 700;
 }
 
 .timer-display {
-    font-size: 110px;
-    font-weight: 800;
-    margin: 20px 0;
-    letter-spacing: -2px;
-    user-select: none;
+  font-size: 110px;
+  font-weight: 800;
+  margin: 20px 0;
+  letter-spacing: -2px;
+  user-select: none;
 }
 
 .start-btn {
-    width: 200px;
-    height: 55px;
-    background-color: #ffffff;
-    color: var(--bg-color);
-    border: none;
-    font-size: 22px;
-    font-weight: 700;
-    border-radius: 4px;
-    box-shadow: rgb(235, 235, 235) 0px 6px 0px;
-    transition: all 0.1s ease;
+  width: 200px;
+  height: 55px;
+  background-color: #ffffff;
+  color: var(--bg-color);
+  border: none;
+  font-size: 22px;
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: rgb(235, 235, 235) 0px 6px 0px;
+  transition: all 0.1s ease;
 }
 
 .start-btn:active {
-    transform: translateY(6px);
-    box-shadow: none;
+  transform: translateY(6px);
+  box-shadow: none;
 }
 
 /* --- Task Meta Status --- */
 .task-status {
-    text-align: center;
-    margin: 24px 0;
+  text-align: center;
+  margin: 24px 0;
 }
 
 .task-number {
-    font-size: 15px;
-    opacity: 0.6;
+  font-size: 15px;
+  opacity: 0.6;
 }
 
 .task-message {
-    font-size: 16px;
-    margin-top: 4px;
-    font-weight: 600;
+  font-size: 16px;
+  margin-top: 4px;
+  font-weight: 600;
 }
 
 /* --- Tasks List Styling --- */
 .tasks-section {
-    width: 100%;
+  width: 100%;
 }
 
 .tasks-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-    padding-bottom: 12px;
-    margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .tasks-header h2 {
-    font-size: 18px;
-    font-weight: 700;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .more-btn-v {
-    background-color: var(--card-bg);
-    border: none;
-    color: var(--text-main);
-    width: 32px;
-    height: 32px;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  background-color: var(--card-bg);
+  border: none;
+  color: var(--text-main);
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .more-btn-v:hover {
-    background-color: var(--card-bg-hover);
+  background-color: var(--card-bg-hover);
 }
 
 .add-task-btn {
-    width: 100%;
-    background-color: rgba(0, 0, 0, 0.1);
-    color: var(--text-muted);
-    border: 2px dashed rgba(255, 255, 255, 0.4);
-    border-radius: 8px;
-    padding: 18px 0;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s ease;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-muted);
+  border: 2px dashed rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  padding: 18px 0;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
 }
 
 .add-task-btn:hover {
-    background-color: rgba(0, 0, 0, 0.2);
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.7);
 }
 
 .plus-icon {
-    font-size: 18px;
-    font-weight: 800;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 /* --- Typography & Copy Layout --- */
 .hero-section {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    padding-bottom: 30px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 30px;
 }
 
 .heroimage_title,
 .catchcopy_title {
-    display: block;
-    color: var(--bg-color);
-    font-weight: 700;
-    letter-spacing: -0.5px;
+  display: block;
+  color: var(--bg-color);
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .heroimage_title {
-    margin-top: 50px;
-    font-size: 28px;
-    line-height: 1.4;
-    text-align: left;
+  margin-top: 50px;
+  font-size: 28px;
+  line-height: 1.4;
+  text-align: left;
 }
 
 .catchcopy {
-    margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 .catchcopy_title {
-    margin: 2.2em 0 0;
-    font-size: 22px;
-    letter-spacing: -0.3px;
+  margin: 2.2em 0 0;
+  font-size: 22px;
+  letter-spacing: -0.3px;
 }
 
 .catchcopy_title::after {
-    content: '';
-    display: block;
-    width: 32px;
-    padding-top: 10px;
-    border-bottom: 4px solid var(--bg-color);
-    opacity: 0.5;
-    border-radius: 4px;
+  content: "";
+  display: block;
+  width: 32px;
+  padding-top: 10px;
+  border-bottom: 4px solid var(--bg-color);
+  opacity: 0.5;
+  border-radius: 4px;
 }
 
 .catchcopy_text,
 .catchcopy_list {
-    color: #222222;
-    font-size: 16px;
-    line-height: 1.6;
-    padding-top: 18px;
+  color: #222222;
+  font-size: 16px;
+  line-height: 1.6;
+  padding-top: 18px;
 }
 
 .catchcopy_list {
-    padding-left: 20px;
+  padding-left: 20px;
 }
 
 .catchcopy_list li {
-    margin-bottom: 12px;
-    padding-left: 4px;
+  margin-bottom: 12px;
+  padding-left: 4px;
 }
 
 li .bold {
-    font-weight: 700;
-    color: #111111;
+  font-weight: 700;
+  color: #111111;
 }
 
 /* --- Footer Container --- */
 .footer {
-    background-color: var(--surface-dark);
-    color: #aaaaaa;
-    padding: 20px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 24px;
-    margin-top: 40px;
-    border-top: 1px solid var(--surface-muted);
+  background-color: var(--surface-dark);
+  color: #aaaaaa;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  margin-top: 40px;
+  border-top: 1px solid var(--surface-muted);
 }
 
 /* --- Sitemap Links --- */
 .footer_sitemap,
 .footer_smlink {
-    display: flex;
-    gap: 30px;
+  display: flex;
+  gap: 30px;
 }
 
 .footer_sitemap a,
 .footer_smlink a {
-    color: var(--surface-light);
-    text-decoration: none;
-    transition: transform 0.2s ease, color 0.2s ease;
+  color: var(--surface-light);
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease;
 }
 
 .footer_sitemap a {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
 }
 
 .footer_sitemap a:hover,
 .footer_smlink a:hover {
-    color: #ffffff;
+  color: #ffffff;
 }
 
 .footer_smlink a {
-    font-size: 22px;
+  font-size: 22px;
 }
 
 .footer_smlink a:hover {
-    transform: translateY(-2px);
+  transform: translateY(-2px);
 }
 
 .footer_me {
-    font-size: 14px;
-    color: #666666;
+  font-size: 14px;
+  color: #666666;
 }
 
 .footer_me span {
-    color: #999999;
-    font-weight: 500;
+  color: #999999;
+  font-weight: 500;
 }
 
 .footer_copyright {
-    font-size: 12px;
-    color: #444444;
-    letter-spacing: 0.5px;
+  font-size: 12px;
+  color: #444444;
+  letter-spacing: 0.5px;
 }
 
-/* ==========================================================================
-   Responsive Media Queries (Append to the bottom of your CSS file)
-   ========================================================================== */
+
+/* Legal & Static Pages Styling (Privacy Policy / Terms) */   
+
+/* Page background override to stark clean canvas style */
+.legal-page-body {
+  background-color: #ffffff !important;
+  color: #444444;
+}
+
+/* Minimalist border header element mapping */
+.legal-navbar {
+  width: 100%;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #eeeeee;
+  margin-bottom: 50px;
+}
+
+/* Center and style the branding explicitly for light mode context */
+.legal-logo-center {
+  color: #e96363; /* Subtle app theme logo color tint */
+  font-size: 24px;
+}
+
+.legal-logo-center .logo-icon {
+  background-color: #e96363;
+  color: #ffffff;
+}
+
+/* Alignment layout wrapper inherits container sizing cleanly */
+.legal-container {
+  text-align: left;
+  margin-bottom: 100px;
+}
+
+.legal-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #532222; /* Rich dark crimson tint matching screenshot styling */
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+
+.legal-date {
+  font-size: 15px;
+  color: #777777;
+  margin-bottom: 40px;
+}
+
+/* Text spacing & formatting container blocks */
+.legal-content-block p {
+  font-size: 16px;
+  line-height: 1.65;
+  color: #555555;
+  margin-bottom: 20px;
+  font-weight: 400;
+}
+
+/* Sub-headers definitions styling */
+.privacy_h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #532222;
+  margin-top: 40px;
+  margin-bottom: 16px;
+}
+
+.privacy_h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #532222;
+  margin-top: 30px;
+  margin-bottom: 12px;
+}
+
+/* Text Lists Custom System */
+.legal-content-block .catchcopy_list {
+  margin-bottom: 24px;
+  padding-left: 20px;
+}
+
+.legal-content-block .catchcopy_list li {
+  font-size: 15px;
+  color: #555555;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+/* Subtle standard hyperlink accenting */
+.legal-link {
+  color: #e96363;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(233, 99, 99, 0.4);
+  transition: color 0.2s ease;
+}
+
+.legal-link:hover {
+  color: #ba4949;
+  border-bottom-color: #ba4949;
+}
+
+/* Final bottom agreement paragraph accentuation */
+.legal-agreement-footer {
+  font-weight: 600 !important;
+  color: #333333 !important;
+  margin-top: 40px;
+  border-top: 1px solid #eeeeee;
+  padding-top: 20px;
+}
+
+/* --- Mobile Responsive Rule for Legal Header Context --- */
+@media screen and (max-width: 480px) {
+  .legal-navbar {
+    margin-bottom: 30px;
+  }
+  .legal-title {
+    font-size: 26px;
+    text-align: left;
+  }
+  .privacy_h2 {
+    font-size: 20px;
+  }
+  .privacy_h3 {
+    font-size: 16px;
+  }
+}
+
+/* Responsive Media Queries  */
+
 
 /* --- Tablet Devices (Screens smaller than 768px) --- */
 @media screen and (max-width: 768px) {
-    .navbar {
-        width: 90%; /* Fluid width instead of fixed pixel widths */
-        margin-bottom: 30px;
-    }
+  .navbar {
+    width: 90%; /* Fluid width instead of fixed pixel widths */
+    margin-bottom: 30px;
+  }
 
-    .main-container {
-        width: 85%;
-    }
+  .main-container {
+    width: 85%;
+  }
 
-    .heroimage_title {
-        font-size: 24px; /* Slightly scaled down text for readability */
-        margin-top: 35px;
-    }
+  .heroimage_title {
+    font-size: 24px; /* Slightly scaled down text for readability */
+    margin-top: 35px;
+  }
 
-    .catchcopy_title {
-        font-size: 20px;
-    }
+  .catchcopy_title {
+    font-size: 20px;
+  }
 }
 
 /* --- Mobile Devices (Screens smaller than 480px) --- */
 @media screen and (max-width: 480px) {
-    /* Navbar Adjustment */
-    .navbar {
-        width: 100%;
-        padding: 0 16px;
-        margin-bottom: 20px;
-    }
+  /* Navbar Adjustment */
+  .navbar {
+    width: 100%;
+    padding: 0 16px;
+    margin-bottom: 20px;
+  }
 
-    .logo {
-        font-size: 18px;
-    }
+  .logo {
+    font-size: 18px;
+  }
 
-    .nav-btn {
-        padding: 6px 10px;
-        font-size: 12px;
-    }
+  .nav-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
 
-    .icon_text {
-        display: none;
-    }
+  .icon_text {
+    display: none;
+  }
 
-    .progress-bar-bg {
-        margin-top: -20px;
-        width: 90%;
-    }
+  .progress-bar-bg {
+    margin-top: -20px;
+    width: 90%;
+  }
 
-    /* Main Container & Timer */
-    .main-container {
-        width: 100%;
-        padding: 0 16px;
-    }
+  /* Main Container & Timer */
+  .main-container {
+    width: 100%;
+    padding: 0 16px;
+  }
 
-    .timer-card {
-        padding: 20px 12px;
-    }
+  .timer-card {
+    padding: 20px 12px;
+  }
 
-    .timer-modes {
-        gap: 6px;
-        width: 100%;
-        justify-content: space-between;
-    }
+  .timer-modes {
+    gap: 6px;
+    width: 100%;
+    justify-content: space-between;
+  }
 
-    .mode-btn {
-        font-size: 14px;
-        padding: 6px 8px;
-        flex: 1; /* Makes buttons distribute evenly */
-        text-align: center;
-    }
+  .mode-btn {
+    font-size: 14px;
+    padding: 6px 8px;
+    flex: 1; /* Makes buttons distribute evenly */
+    text-align: center;
+  }
 
-    .timer-display {
-        font-size: 80px; /* Prevents text overflow on narrow displays */
-        margin: 15px 0;
-    }
+  .timer-display {
+    font-size: 80px; /* Prevents text overflow on narrow displays */
+    margin: 15px 0;
+  }
 
-    .start-btn {
-        width: 100%; /* Spans full width of the card on mobile */
-        height: 50px;
-        font-size: 18px;
-    }
+  .start-btn {
+    width: 100%; /* Spans full width of the card on mobile */
+    height: 50px;
+    font-size: 18px;
+  }
 
-    /* Content Layout Adjustments */
-    .container {
-        width: 100%;
-        padding: 0 16px;
-    }
+  /* Content Layout Adjustments */
+  .container {
+    width: 100%;
+    padding: 0 16px;
+  }
 
-    .heroimage_title {
-        font-size: 20px;
-        margin-top: 25px;
-    }
+  .heroimage_title {
+    font-size: 20px;
+    margin-top: 25px;
+  }
 
-    .catchcopy_title {
-        font-size: 18px;
-    }
-    
+  .catchcopy_title {
+    font-size: 18px;
+  }
 
-    .catchcopy_text, 
-    .catchcopy_list {
-        font-size: 14px;
-        line-height: 1.5;
-    }
+  .catchcopy_text,
+  .catchcopy_list {
+    font-size: 14px;
+    line-height: 1.5;
+  }
 
-    /* Footer Optimizations */
-    .footer {
-        padding: 30px 16px;
-        gap: 20px;
-    }
+  /* Footer Optimizations */
+  .footer {
+    padding: 30px 16px;
+    gap: 20px;
+  }
 
-    .footer_sitemap {
-        gap: 15px;
-        flex-wrap: wrap; /* Allows text to wrap to the next line if the screen is ultra-small */
-        justify-content: center;
-    }
+  .footer_sitemap {
+    gap: 15px;
+    flex-wrap: wrap; /* Allows text to wrap to the next line if the screen is ultra-small */
+    justify-content: center;
+  }
 
-    .footer_sitemap a {
-        font-size: 12px;
-    }
+  .footer_sitemap a {
+    font-size: 12px;
+  }
 }
