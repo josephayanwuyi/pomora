@@ -589,7 +589,7 @@
     padding: 14px;
     font-size: 16px;
     font-weight: 700;
-    color: #ffffff;
+    color: #222222;
     border-radius: 8px;
     margin-top: 15px;
     cursor: pointer;
@@ -763,7 +763,7 @@
     padding: 14px;
     font-size: 15px;
     font-weight: 700;
-    color: #ffffff;
+    color: #222222;
     border-radius: 6px;
     margin-top: 8px;
     cursor: pointer;
@@ -798,4 +798,401 @@
     font-family: inherit;
     font-size: 13px;
     transition: color 0.4s ease;
+}
+
+/* --- Timer Control Utilities Layout --- */
+.timer-controls-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.timer-utilities {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.util-btn {
+    background: none;
+    border: none;
+    color: #ffffff;
+    opacity: 0.75;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.util-btn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.util-btn span {
+    font-size: 12px;
+}
+
+/* --- Global Toast Notification Banner --- */
+.toast-banner {
+    position: fixed;
+    top: -60px; /* Hidden offscreen by default */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333333;
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 12px;
+    z-index: 9999; /* Ensure it floats above all modals */
+    transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Dynamic State Theme Colors */
+.toast-banner.success { background-color: #388e3c; } /* Success Green */
+.toast-banner.error { background-color: #d32f2f; }   /* Error Red */
+.toast-banner.info { background-color: #1976d2; }    /* Info Blue */
+
+/* Trigger Class to slide it down */
+.toast-banner.show {
+    top: 24px;
+}
+
+
+/* --- Relative Dropdown Anchor Positioning --- */
+.more-menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.more-btn {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.more-btn:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+/* --- Floating Menu Card UI --- */
+.more-dropdown-card {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 8px;
+    background-color: #ffffff;
+    box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 16px;
+    border-radius: 8px;
+    width: 220px;
+    padding: 6px 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Slide and Show Toggle Class Trigger */
+.more-dropdown-card.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.dropdown-item-btn {
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333333;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.15s ease;
+}
+
+.dropdown-item-btn:hover {
+    background-color: #f5f5f5;
+}
+
+.dropdown-item-btn.danger {
+    color: #d32f2f;
+}
+
+.dropdown-item-btn.danger:hover {
+    background-color: #ffebee;
+}
+
+.dropdown-divider {
+    border: none;
+    border-top: 1px solid #eeeeee;
+    margin: 4px 0;
+}
+
+/* --- Full-Page Analytical Dashboard Panel Styles --- */
+.full-page-workspace {
+    width: 100%;
+    max-width: 620px;
+    margin: 40px auto;
+    padding: 24px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 12px;
+    color: #333333;
+}
+
+.dashboard-filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f5f5f5;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+.filter-toggle-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-btn {
+    background-color: #f5f5f5;
+    border: none;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666666;
+}
+
+.filter-btn.active {
+    background-color: #ba4949;
+    color: #ffffff;
+}
+
+.stats-overview-grid {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    flex: 1;
+    background-color: #fafdff;
+    border: 1px solid #e1f0fa;
+    padding: 16px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.card-label {
+    font-size: 12px;
+    color: #777777;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* --- Trend Charts CSS Layout Setup --- */
+.trend-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 180px;
+    border-bottom: 2px solid #eeeeee;
+    padding-top: 20px;
+    margin-top: 12px;
+    gap: 10px;
+}
+
+.chart-bar-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.chart-bar-fill {
+    width: 100%;
+    max-width: 32px;
+    background-color: #ba4949;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.5s ease;
+    cursor: pointer;
+}
+
+.chart-bar-fill:hover {
+    background-color: #a33c3c;
+}
+
+.chart-date-lbl {
+    font-size: 11px;
+    color: #888888;
+    margin-top: 6px;
+    font-weight: 600;
+}
+
+/* --- Full-Screen Fixed Fixed Glass Overlay Backdrop --- */
+.full-screen-overlay-workspace {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.55); /* Dim black glass backdrop shadow layer */
+    backdrop-filter: blur(4px); /* Premium clean frosted blur look */
+    z-index: 2000; /* Stacks completely over everything else on screen */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* Animation entry configurations rules variables properties logs */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+/* Toggle Trigger visibility indicator switch hook */
+.full-screen-overlay-workspace.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* --- Centered Dashboard Card Document Modal Layout --- */
+.dashboard-inner-overlay-card {
+    background-color: #ffffff;
+    width: 90%;
+    max-width: 640px;
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 8px 32px;
+    position: relative;
+    color: #333333;
+    
+    /* Smooth bounce up animation entry profile tracking logs */
+    transform: translateY(20px);
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+}
+
+.full-screen-overlay-workspace.show .dashboard-inner-overlay-card {
+    transform: translateY(0);
+}
+
+/* --- Absolute Floating Dismiss Button Styles --- */
+.close-dashboard-overlay-btn {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #999999;
+    cursor: pointer;
+    font-weight: 300;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.close-dashboard-overlay-btn:hover {
+    color: #333333;
+}
+
+/* ==========================================================================
+   POMORA ANALYTICS DASHBOARD RESPONSIVE BREAKPOINTS (MOBILE & TABLET ADJUSTMENTS)
+   ========================================================================== */
+
+@media screen and (max-width: 600px) {
+    /* 1. Add internal card scroll spacing for tiny screens so content never cuts off */
+    .full-screen-overlay-workspace {
+        padding: 12px;
+        align-items: flex-start; /* Prevents overflow clipping on short device aspect ratios */
+        overflow-y: auto;
+    }
+
+    .dashboard-inner-overlay-card {
+        width: 100%;
+        padding: 24px 16px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    /* 2. Rescale and stack header toggles nicely */
+    .dashboard-filter-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+        padding-bottom: 12px;
+    }
+
+    .dashboard-filter-header h2 {
+        font-size: 20px;
+    }
+
+    .filter-toggle-buttons {
+        width: 100%;
+        display: flex;
+    }
+
+    .filter-btn {
+        flex: 1;
+        text-align: center;
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+
+    /* 3. Drop statistical overview cards into a flexible single-column column map stack */
+    .stats-overview-grid {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .stat-card {
+        padding: 12px;
+    }
+
+    .stat-card h3 {
+        font-size: 22px;
+        margin-top: 4px;
+    }
+
+    /* 4. Optimize Graph Bar padding spacing adjustments */
+    .trend-bar-chart {
+        height: 150px; /* Slightly lower baseline height parameters to fit viewport heights */
+        gap: 6px;
+    }
+
+    .chart-bar-fill {
+        border-radius: 3px 3px 0 0;
+    }
+
+    .chart-date-lbl {
+        font-size: 10px;
+        transform: scale(0.9); /* Keeps labels crisp on small grid layouts */
+    }
 }
