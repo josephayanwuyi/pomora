@@ -22,7 +22,7 @@ app.add_middleware(
 )
 
 # --- SECURITY SYSTEM CONFIGURATION ---
-JWT_SECRET = "CHANGE_THIS_TO_A_COMPLEX_RANDOM_STRING_SECRET_KEY"
+JWT_SECRET = os.getenv("JWT_SECRET", "a_local_fallback_for_development_only")
 JWT_ALGORITHM = "HS256"
 security_bearer = HTTPBearer()
 
