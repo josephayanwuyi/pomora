@@ -1,10 +1,10 @@
-// --- AWS SERVER ROUTING CONFIG ---
+// --- PRODUCTION SERVER ROUTING CONFIG ---
 const IS_PRODUCTION = window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost";
 
-// Replace with your EC2 Public IP or Custom Domain later
 const BACKEND_URL = "https://pomora-backend-api.onrender.com";
 
-const API_BASE_URL = IS_PRODUCTION ? BACKEND_URL : "http://127.0.0.1:8000";
+const API_BASE_URL = IS_PRODUCTION ? BACKEND_URL : "${API_BASE_URL}";
+
 
 // Pomora - Master Productivity Application Architecture Engine
 
@@ -323,7 +323,8 @@ const PomodoroTimer = {
         }
 
         try {
-            await fetch("http://127.0.0.1:8000/api/analytics/log", {
+            // await fetch("${API_BASE_URL}/api/analytics/log", {
+            await fetch(`${API_BASE_URL}/api/analytics/log`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -463,7 +464,8 @@ const SettingsManager = {
     if (token) {
       // USER IS SIGNED IN: Save securely to backend database using headers
       try {
-        await fetch("http://127.0.0.1:8000/api/settings/save", {
+        // await fetch("${API_BASE_URL}/api/settings/save", {
+        await fetch(`${API_BASE_URL}/api/settings/save`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -575,7 +577,7 @@ const TaskManager = {
     const token = localStorage.getItem("pomora_token");
     if (token) {
       try {
-        await fetch("http://127.0.0.1:8000/api/tasks", {
+        await fetch(`${API_BASE_URL}/api/tasks`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -602,7 +604,7 @@ const TaskManager = {
     const token = localStorage.getItem("pomora_token");
     if (token) {
       try {
-        await fetch(`http://127.0.0.1:8000/api/tasks/toggle/${id}`, {
+        await fetch(`${API_BASE_URL}/api/tasks/toggle/${id}`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -623,7 +625,7 @@ const TaskManager = {
     const token = localStorage.getItem("pomora_token");
     if (token) {
       try {
-        await fetch(`http://127.0.0.1:8000/api/tasks/${id}`, {
+        await fetch(`${API_BASE_URL}/api/tasks/${id}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -667,7 +669,7 @@ const TaskManager = {
     if (this.activeUserId) {
       // Blaster pipeline request payload packet directly to SQLite tables
       try {
-        await fetch("http://127.0.0.1:8000/api/tasks", {
+        await fetch("${API_BASE_URL}/api/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -694,7 +696,7 @@ const TaskManager = {
 
     if (this.activeUserId) {
       try {
-        await fetch(`http://127.0.0.1:8000/api/tasks/toggle/${id}`, {
+        await fetch(`${API_BASE_URL}/api/tasks/toggle/${id}`, {
           method: "POST",
         });
       } catch (err) {
@@ -713,7 +715,7 @@ const TaskManager = {
 
     if (this.activeUserId) {
       try {
-        await fetch(`http://127.0.0.1:8000/api/tasks/${id}`, {
+        await fetch(`${API_BASE_URL}/api/tasks/${id}`, {
           method: "DELETE",
         });
       } catch (err) {
@@ -731,7 +733,7 @@ const TaskManager = {
         // Wipe current database batch records sequentially
         for (let t of this.tasks) {
           try {
-            await fetch(`http://127.0.0.1:8000/api/tasks/${t.id}`, {
+            await fetch(`${API_BASE_URL}/api/tasks/${t.id}`, {
               method: "DELETE",
             });
           } catch (e) {}
@@ -949,7 +951,7 @@ const AuthManager = {
     };
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/signin", {
+      const response = await fetch(`${API_BASE_URL}/api/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1015,7 +1017,7 @@ const AuthManager = {
 
     try {
       // Send data across network to port 8000
-      const response = await fetch("http://127.0.0.1:8000/api/signup", {
+      const response = await fetch(`${API_BASE_URL}/api/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1124,7 +1126,7 @@ const DashboardManager = {
         if (!token) return;
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/analytics/dashboard?range_type=${this.currentRange}`, {
+            const response = await fetch(`${API_BASE_URL}/api/analytics/dashboard?range_type=${this.currentRange}`, {
                 method: "GET",
                 headers: { "Authorization": `Bearer ${token}` }
             });
