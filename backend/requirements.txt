@@ -3,3 +3,4 @@ uvicorn[standard]
 bcrypt
 pyjwt
 psycopg2-binary
+email-validator
