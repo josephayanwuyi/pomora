@@ -4,6 +4,7 @@ import jwt
 import datetime
 import os
 import psycopg2
+import requests
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,6 +31,11 @@ security_bearer = HTTPBearer()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///pomora.db")
 IS_POSTGRES = "postgres" in DATABASE_URL
 
+# --- EMAIL VERIFICATION API ---
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+# Your frontend URL where users will land to verify
+FRONTEND_URL = "https://pomora-omega.vercel.app"
+
 def get_db_connection():
     """Dynamically routes traffic to cloud Postgres or local SQLite."""
     if IS_POSTGRES:
@@ -54,6 +60,7 @@ def init_db():
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
+            is_verified INTEGER DEFAULT 0,
             pomo_time INTEGER DEFAULT 25,
             short_time INTEGER DEFAULT 5,
             long_time INTEGER DEFAULT 15,
@@ -150,7 +157,7 @@ class AnalyticsLogCreate(BaseModel):
 
 @app.post("/api/signup")
 def signup(user: UserSignUp):
-    conn = get_db_connection()  # FIXED: Routing to dynamic database connection
+    conn = get_db_connection()
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT id FROM users WHERE email = %s", (user.email,))
@@ -158,12 +165,68 @@ def signup(user: UserSignUp):
             raise HTTPException(status_code=400, detail="This email is already registered.")
         
         secure_password = hash_password(user.password)
+        
+        # Insert user with is_verified set to 0 (default)
         cursor.execute(
-            "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
+            "INSERT INTO users (name, email, password, is_verified) VALUES (%s, %s, %s, 0) RETURNING id",
             (user.name, user.email, secure_password)
         )
+        user_id = cursor.fetchone()[0]
         conn.commit()
-        return {"status": "success", "message": "Account created successfully! 🎉"}
+        
+        # Generate a simple confirmation token string using their encrypted password hash slice
+        verification_token = secure_password[-15:].replace("/", "").replace(".", "")
+        verification_link = f"{FRONTEND_URL}/verify.html?email={user.email}&token={verification_token}"
+        
+        # Fire the verification email out via Resend API
+        if RESEND_API_KEY:
+            requests.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "from": "Pomora App <onboarding@resend.dev>",
+                    "to": [user.email],
+                    "subject": "Activate Your Pomora Account ⏱️",
+                    "html": f"""
+                        <h3>Welcome to Pomora, {user.name}!</h3>
+                        <p>Please click the secure link below to verify your email address and activate your production dashboard profile:</p>
+                        <p><a href="{verification_link}" style="background:#c15b5b; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; display:inline-block;">Verify My Email</a></p>
+                        <br>
+                        <small>If you did not sign up for this account, please ignore this email.</small>
+                    """
+                }
+            )
+            
+        return {"status": "success", "message": "Account created! Please check your email inbox to verify."}
+    finally:
+        cursor.close()
+        conn.close()
+
+# --- NEW ENDPOINT: HANDLES THE LINK CLICK ---
+@app.get("/api/verify")
+def verify_email(email: str, token: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT password, is_verified FROM users WHERE email = %s", (email,))
+        record = cursor.fetchone()
+        
+        if not record:
+            raise HTTPException(status_code=404, detail="User account records not found.")
+            
+        stored_hash, is_verified = record
+        expected_token = stored_hash[-15:].replace("/", "").replace(".", "")
+        
+        if token != expected_token:
+            raise HTTPException(status_code=400, detail="Invalid or expired verification session signature.")
+            
+        # Flip the bits to active status 1
+        cursor.execute("UPDATE users SET is_verified = 1 WHERE email = %s", (email,))
+        conn.commit()
+        return {"status": "success", "message": "Account verified successfully!"}
     finally:
         cursor.close()
         conn.close()
@@ -174,7 +237,7 @@ def signin(credentials: UserSignIn):
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT id, name, email, password, pomo_time, short_time, long_time, 
+        SELECT id, name, email, password, is_verified, pomo_time, short_time, long_time, 
                long_interval, auto_break, auto_pomo, selected_sound 
         FROM users WHERE email = %s
     """, (credentials.email,))
@@ -186,11 +249,16 @@ def signin(credentials: UserSignIn):
     if not user_record:
         raise HTTPException(status_code=401, detail="Invalid email address or password.")
         
-    user_id, name, email, stored_hash, pomo, short, long_b, interval, auto_b, auto_p, sound = user_record
+    # FIXED: Added 'is_verified' right after stored_hash to match the exact 12-column SQL order
+    user_id, name, email, stored_hash, is_verified, pomo, short, long_b, interval, auto_b, auto_p, sound = user_record
     
     if not verify_password(credentials.password, stored_hash):
         raise HTTPException(status_code=401, detail="Invalid email address or password.")
-        
+    
+    # FIXED: Using the correctly unpacked 'is_verified' variable to block unactivated links
+    if not is_verified:
+        raise HTTPException(status_code=403, detail="Please verify your email address before logging in.")
+
     token_str = create_access_token(user_id, name, email)
         
     return {
@@ -209,7 +277,6 @@ def signin(credentials: UserSignIn):
             }
         }
     }
-
 # --- SECURED ENDPOINTS ---
 
 @app.get("/api/tasks")

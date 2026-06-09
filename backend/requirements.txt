@@ -4,3 +4,4 @@ bcrypt
 pyjwt
 psycopg2-binary
 email-validator
+requests

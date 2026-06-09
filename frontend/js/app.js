@@ -1261,11 +1261,11 @@ const PomoraKeepAlive = {
     init() {
         // Only trigger the background heartbeat ping loop if running live in production
         if (typeof IS_LOCAL !== 'undefined' && IS_LOCAL) {
-            console.log("ℹ️ Local environment detected. Skipping keep-alive heartbeat loop.");
+            console.log("Local environment detected. Skipping keep-alive heartbeat loop.");
             return;
         }
 
-        console.log("⏱️ Pomora Keep-Alive Engine initialized. Heartbeat cycle active.");
+        console.log("Pomora Keep-Alive Engine initialized. Heartbeat cycle active.");
         
         // Fire an immediate initial ping to wake things up, then loop every 12 minutes
         this.pingBackend();
@@ -1280,10 +1280,10 @@ const PomoraKeepAlive = {
         try {
             // A lightweight HEAD request consumes almost zero data but alerts the server process
             await fetch(`${API_BASE_URL}/api/tasks`, { method: "HEAD" });
-            console.log("💓 Keep-alive heartbeat signal dispatched successfully to cloud server.");
+            console.log("Keep-alive heartbeat signal dispatched successfully to cloud server.");
         } catch (error) {
             // Fail silently in the background without breaking user interaction threads
-            console.warn("⚠️ Keep-alive heartbeat connection sequence experienced a blip:", error);
+            console.warn("Keep-alive heartbeat connection sequence experienced a blip:", error);
         }
     }
 };

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Verification | Pomora</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .verify-box { max-width: 450px; margin: 100px auto; padding: 40px; text-align: center; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .verify-box h2 { color: #a94242; margin-bottom: 15px; }
+        .verify-btn { display: inline-block; margin-top: 20px; background: #c15b5b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+    </style>
+</head>
+<body style="background: #fdf6f6; font-family: sans-serif;">
+    <div class="verify-box">
+        <h2 id="statusTitle">Verifying Your Profile...</h2>
+        <p id="statusMessage">Communicating with the security layer streams to activate your token...</p>
+        <a href="index.html" id="actionBtn" class="verify-btn" style="display: none;">Proceed to Sign In</a>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const email = urlParams.get("email");
+            const token = urlParams.get("token");
+            
+            // Single production routing url helper destination
+            const BACKEND_URL = "https://pomora-backend-api.onrender.com";
+
+            if (!email || !token) {
+                document.getElementById("statusTitle").textContent = "Invalid Request";
+                document.getElementById("statusMessage").textContent = "Missing secure pipeline parameters.";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/verify?email=${email}&token=${token}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById("statusTitle").textContent = "Account Activated! 🎉";
+                    document.getElementById("statusMessage").textContent = "Your email has been verified. You can now log into Pomora smoothly.";
+                    document.getElementById("actionBtn").style.display = "inline-block";
+                } else {
+                    document.getElementById("statusTitle").textContent = "Verification Failed";
+                    document.getElementById("statusMessage").textContent = data.detail || "The link is broken or expired.";
+                }
+            } catch (error) {
+                document.getElementById("statusTitle").textContent = "Network Error";
+                document.getElementById("statusMessage").textContent = "Could not reach the security cluster server.";
+            }
+        });
+    </script>
+</body>
+</html>
