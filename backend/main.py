@@ -11,12 +11,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 
-app = FastAPI(title="Pomora JWT Secured Backend API")
+app = FastAPI(title="Pomora Backend API")
 
 # --- CORS SECURITY POLICY ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], # Permits all client browser endpoints to negotiate payloads
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -181,20 +181,34 @@ def signup(user: UserSignUp):
 
 @app.post("/api/signin")
 def signin(credentials: UserSignIn):
-    conn = sqlite3.connect("pomora.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
+    
+    # FIXED: Explicitly pull named columns so Postgres never guesses row positions
     cursor.execute("""
         SELECT id, name, email, password, pomo_time, short_time, long_time, 
                long_interval, auto_break, auto_pomo, selected_sound 
-        FROM users WHERE email = ?
+        FROM users WHERE email = %s
     """, (credentials.email,))
+    
     user_record = cursor.fetchone()
     conn.close()
     
     if not user_record:
         raise HTTPException(status_code=401, detail="Invalid email address or password.")
         
-    user_id, name, email, stored_hash, pomo, short, long_b, interval, auto_b, auto_p, sound = user_record
+    # Mapping fields safely by index alignment properties
+    user_id = user_record[0]
+    name = user_record[1]
+    email = user_record[2]
+    stored_hash = user_record[3]
+    pomo = user_record[4]
+    short = user_record[5]
+    long_b = user_record[6]
+    interval = user_record[7]
+    auto_b = user_record[8]
+    auto_p = user_record[9]
+    sound = user_record[10]
     
     if not verify_password(credentials.password, stored_hash):
         raise HTTPException(status_code=401, detail="Invalid email address or password.")
@@ -205,7 +219,7 @@ def signin(credentials: UserSignIn):
     return {
         "status": "success",
         "message": f"Welcome back, {name}!",
-        "token": token_str, # Frontend will save this string token
+        "token": token_str,
         "user": {
             "name": name,
             "email": email,
@@ -218,7 +232,6 @@ def signin(credentials: UserSignIn):
             }
         }
     }
-
 # --- SECURED ENDPOINTS (Require Verified Token to Run) ---
 
 @app.get("/api/tasks")
