@@ -1252,6 +1252,43 @@ const NavigationManager = {
         this.fullDashboardOverlay.classList.remove("show");
     }
 };
+
+/**
+ * Pomora Keep-Alive Engine
+ * Periodically pings the Render backend to prevent server sleep cycles
+ */
+const PomoraKeepAlive = {
+    init() {
+        // Only trigger the background heartbeat ping loop if running live in production
+        if (typeof IS_LOCAL !== 'undefined' && IS_LOCAL) {
+            console.log("ℹ️ Local environment detected. Skipping keep-alive heartbeat loop.");
+            return;
+        }
+
+        console.log("⏱️ Pomora Keep-Alive Engine initialized. Heartbeat cycle active.");
+        
+        // Fire an immediate initial ping to wake things up, then loop every 12 minutes
+        this.pingBackend();
+        
+        // 12 minutes = 12 * 60 * 1000 = 720,000 milliseconds
+        setInterval(() => {
+            this.pingBackend();
+        }, 720000);
+    },
+
+    async pingBackend() {
+        try {
+            // A lightweight HEAD request consumes almost zero data but alerts the server process
+            await fetch(`${API_BASE_URL}/api/tasks`, { method: "HEAD" });
+            console.log("💓 Keep-alive heartbeat signal dispatched successfully to cloud server.");
+        } catch (error) {
+            // Fail silently in the background without breaking user interaction threads
+            console.warn("⚠️ Keep-alive heartbeat connection sequence experienced a blip:", error);
+        }
+    }
+};
+
+
 // DOM Bootloader Hook initializations
 document.addEventListener("DOMContentLoaded", () => {
   PomodoroTimer.init();
@@ -1259,8 +1296,12 @@ document.addEventListener("DOMContentLoaded", () => {
   ReportManager.init();
   SettingsManager.init();
   AuthManager.init();
+  
 
   // NEW SYSTEM PACK INITIALIZATIONS
   DashboardManager.init();
   NavigationManager.init();
+
+  // Initialize the keep-alive loop when the script mounts execution fields
+  PomoraKeepAlive.init();
 });
