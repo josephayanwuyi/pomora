@@ -92,8 +92,29 @@ def init_db():
         )
     """)
     
-    conn.commit()
-    conn.close()
+    try:
+        print("Running database schema checks...")
+        if IS_POSTGRES:
+            # Safely injects the missing verification column if it isn't tracked yet
+            cursor.execute("""
+                ALTER TABLE users 
+                ADD COLUMN IF NOT EXISTS is_verified INTEGER DEFAULT 0;
+            """)
+        else:
+            # Fallback tracking rules for your local development sqlite storage instances
+            cursor.execute("PRAGMA table_info(users);")
+            columns = [col[1] for col in cursor.fetchall()]
+            if "is_verified" not in columns:
+                cursor.execute("ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0;")
+                
+        conn.commit()
+        print("✅ Database schema is completely up to date!")
+    except Exception as migration_error:
+        print(f"ℹ️ Schema status check: {str(migration_error)}")
+        conn.rollback() # Safely discard transaction locks if any state drops
+    finally:
+        cursor.close()
+        conn.close()
 
 init_db()
 
