@@ -31,18 +31,33 @@ security_bearer = HTTPBearer()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///pomora.db")
 
 def get_db_connection():
-    # If on the cloud, connect to your permanent Postgres DB, else fall back to local SQLite
-    if DATABASE_URL.startswith("postgresql"):
-        return psycopg2.connect(DATABASE_URL)
+    """Dynamically routes traffic to cloud Postgres or local SQLite."""
+    # FIXED: Check if 'postgres' is anywhere in the string to be absolutely bulletproof
+    if "postgres" in DATABASE_URL:
+        # Handles a common Render/Neon legacy string format mismatch safely
+        url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        return psycopg2.connect(url)
     else:
-        import sqlite3
         return sqlite3.connect("pomora.db")
+
 def init_db():
+    """Initializes tables using the correct SQL dialect dynamically."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    
+    # FIXED: Uniform check for Postgres presence
+    is_postgres = "postgres" in DATABASE_URL
+    
+    # Dynamic column assignment matching the database dialect exactly
+    id_auto_increment = "SERIAL PRIMARY KEY" if is_postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    timestamp_default = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP" if is_postgres else "DATETIME DEFAULT CURRENT_TIMESTAMP"
+    
+    print(f"--- POMORA DATABASE INITIALIZATION (USING {'POSTGRESQL' if is_postgres else 'SQLITE3'}) ---")
+    
+    # Users table
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_auto_increment},
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
@@ -55,6 +70,8 @@ def init_db():
             selected_sound TEXT DEFAULT 'digital-alarm-buzzer'
         )
     """)
+    
+    # Tasks table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
             id TEXT PRIMARY KEY,
@@ -65,17 +82,18 @@ def init_db():
         )
     """)
 
-    # NEW: Analytics history table tracking focus rounds linked to tasks
-    cursor.execute("""
+    # Analytics logs table
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS analytics_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_auto_increment},
             user_id INTEGER NOT NULL,
             task_text TEXT NOT NULL,
             duration_minutes INTEGER NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            timestamp {timestamp_default},
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
     """)
+    
     conn.commit()
     conn.close()
 
