@@ -2,9 +2,9 @@
 const IS_PRODUCTION = window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost";
 
 // Replace with your EC2 Public IP or Custom Domain later
-const AWS_EC2_BACKEND_URL = "http://13.244.xx.xx:8000"; 
+const BACKEND_URL = "https://pomora-backend-api.onrender.com";
 
-const API_BASE_URL = IS_PRODUCTION ? AWS_EC2_BACKEND_URL : "http://127.0.0.1:8000";
+const API_BASE_URL = IS_PRODUCTION ? BACKEND_URL : "http://127.0.0.1:8000";
 
 // Pomora - Master Productivity Application Architecture Engine
 
