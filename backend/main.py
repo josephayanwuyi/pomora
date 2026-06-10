@@ -7,6 +7,7 @@ import psycopg2
 import requests
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
@@ -466,3 +467,101 @@ def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depend
             "streak_days": len(daily_trends)
         }
     }
+
+# --- GLOBAL 404 REROUTE EXCEPTION HANDLER ---
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code == 404:
+        # Dynamic link points straight to your production frontend Vercel home address
+        FRONTEND_HOME_URL = "https://pomora-omega.vercel.app"
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Page Not Found | Pomora</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="50x50" href="./assets/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/img/favicon-16x16.png">
+  <link rel="manifest" href="./assets/img/site.webmanifest">
+            <style>
+                body {{
+                    background-color: #fcf8f2;
+                    color: #4a4a4a;
+                    font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol";
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                    margin: 0;
+                    text-align: center;
+                }}
+                .error-container {{
+                    max-width: 500px;
+                    padding: 40px;
+                    background: #ffffff;
+                    border-radius: 16px;
+                    box-shadow: 0 8px 24px rgba(184, 115, 99, 0.06);
+                    border: 1px solid rgba(184, 115, 99, 0.1);
+                }}
+                h1 {{
+                    font-size: 72px;
+                    margin: 0;
+                    color: #b87363; /* Matches your premium terracotta focus theme color */
+                    font-weight: 800;
+                    line-height: 1;
+                }}
+                h2 {{
+                    font-size: 24px;
+                    margin: 10px 0 20px 0;
+                    color: #333333;
+                }}
+                p {{
+                    font-size: 16px;
+                    color: #7a7a7a;
+                    line-height: 1.6;
+                    margin-bottom: 30px;
+                }}
+                .home-btn {{
+                    display: inline-block;
+                    background-color: #b87363;
+                    color: #ffffff;
+                    text-decoration: none;
+                    padding: 14px 28px;
+                    font-weight: 600;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 0px #965647;
+                    transition: all 0.1s ease-in-out;
+                }}
+                .home-btn:active {{
+                    transform: translateY(4px);
+                    box-shadow: none;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="error-container">
+                <h1>404</h1>
+                <h2>Lost in focus?</h2>
+                <p>The page, configuration setup, or data route you are searching for has drifted away or doesn't exist anymore.</p>
+                <a href="{FRONTEND_HOME_URL}" class="home-btn">Return to Dashboard</a>
+            </div>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content, status_code=404)
+
+    # Maintain default fallback responses for validation lapses or permission errors
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
