@@ -10,6 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="css/styles.css" />
+
+    <!-- <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/apple-touch-icon.png"> -->
+    <link rel="icon" type="image/png" sizes="50x50" href="./assets/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/img/favicon-16x16.png">
+    <link rel="manifest" href="./assets/img/site.webmanifest">
+
 </head>
 
 <body>
@@ -30,13 +36,68 @@
                     <span class="icon"><i class="fa fa-user-circle" aria-hidden="true"></i></span>
                     <span class="icon_text">Sign In</span>
                 </button>
-                <button type="button" class="more-btn" aria-label="More options">
-                    ⋮
-                </button>
+                <div class="more-menu-container">
+                    <button type="button" class="more-btn" id="moreMenuBtn" aria-label="More options">
+                        ⋮
+                    </button>
+
+                    <div class="more-dropdown-card" id="moreDropdownCard">
+                        <button type="button" class="dropdown-item-btn" id="goToDashboardBtn">
+                            📊 Performance Dashboard
+                        </button>
+                        <button type="button" class="dropdown-item-btn" id="goToTimerBtn" style="display: none;">
+                            ⏱️ Back to Timer
+                        </button>
+                        <hr class="dropdown-divider" />
+                        <button type="button" class="dropdown-item-btn danger" id="dropdownLogoutBtn">
+                            🚪 Log Out Account
+                        </button>
+                    </div>
+                </div>
+
+
+
             </nav>
         </header>
 
-        <div class="progress-bar-bg" aria-hidden="true"></div>
+        <div id="fullPageDashboard" class="full-screen-overlay-workspace">
+            <div class="dashboard-inner-overlay-card">
+                <button type="button" class="close-dashboard-overlay-btn" id="closeDashboardOverlayBtn"
+                    title="Close Dashboard">
+                    &times;
+                </button>
+
+                <div class="dashboard-filter-header">
+                    <h2>Performance Insights</h2>
+                    <div class="filter-toggle-buttons">
+                        <button class="filter-btn active" data-range="7days">7 Days</button>
+                        <button class="filter-btn" data-range="30days">1 Month</button>
+                        <button class="filter-btn" data-range="1year">1 Year</button>
+                    </div>
+                </div>
+
+                <div class="stats-overview-grid">
+                    <div class="stat-card">
+                        <span class="card-label">Focus Volume</span>
+                        <h3 id="dashTotalHours">0.0h</h3>
+                    </div>
+                    <div class="stat-card">
+                        <span class="card-label">Active Consistency</span>
+                        <h3 id="dashStreak">0 Days</h3>
+                    </div>
+                </div>
+
+                <div class="dashboard-charts-section">
+                    <p class="chart-title">Daily Focus Distribution Trend (Minutes)</p>
+                    <div class="trend-bar-chart" id="dashboardTrendChart">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-bar-bg" aria-hidden="true">
+            <div class="progress-bar-fill"></div>
+        </div>
 
         <main id="main-content" class="main-container">
             <section class="timer-card" aria-labelledby="timer-heading">
@@ -52,29 +113,250 @@
                     25:00
                 </div>
 
-                <button type="button" class="start-btn">START</button>
+                <div class="timer-controls-wrapper">
+                    <button class="start-btn">START</button>
+
+                    <div class="timer-utilities">
+                        <button class="util-btn" id="resetTimerBtn" title="Reset Current Round">
+                            <span><i class="fa-solid fa-refresh"></i></span> Reset
+                        </button>
+                        <button class="util-btn" id="skipTimerBtn" title="Skip to Next Round">
+                            Skip <span><i class="fa-solid fa-forward-step"></i></span>
+                        </button>
+                    </div>
+                </div>
             </section>
 
             <div class="task-status">
-                <span class="task-number">#2</span>
-                <p class="task-message">Time to focus!</p>
+                <span class="task-number" id="taskNumberDisplay">#1</span>
+                <p class="task-message" id="taskMessageDisplay">Time to focus!</p>
             </div>
 
-            <section class="tasks-section" aria-labelledby="tasks-heading">
+            <section class="container summary-section">
+                <div class="analytics-card">
+                    <h3>Today's Analytics Summary</h3>
+                    <div class="analytics-grid">
+                        <div class="analytics-item">
+                            <span class="analytics-value" id="totalFocusTimeDisplay">0m</span>
+                            <span class="analytics-label">Total Focused Time</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-value" id="totalRestTimeDisplay">0m</span>
+                            <span class="analytics-label">Total Rest Time</span>
+                        </div>
+                        <div class="analytics-item">
+                            <span class="analytics-value" id="pomodorosCompletedDisplay">0</span>
+                            <span class="analytics-label">Cycles Done</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tasks-section">
                 <div class="tasks-header">
-                    <h2 id="tasks-heading">Tasks</h2>
-                    <button type="button" class="more-btn-v" aria-label="More task options">
-                        ⋮
-                    </button>
+                    <h2>Tasks</h2>
+                    <button class="more-btn-v">⋮</button>
                 </div>
 
-                <button type="button" class="add-task-btn">
-                    <span class="plus-icon" aria-hidden="true">+</span>
-                    Add Task
+                <div class="tasks-success-banner" id="tasksSuccessBanner">
+                    <p class="success-message">You've finished all your tasks for today 🎉</p>
+                    <button class="clear-tasks-btn" id="clearTasksBtn">Clear Tasks</button>
+                </div>
+
+                <div class="tasks-list"></div>
+
+                <div class="task-form-card" id="taskFormCard">
+                    <input type="text" class="task-input-field" id="taskInputField"
+                        placeholder="What are you working on?" maxlength="100">
+                    <div class="task-form-actions">
+                        <button class="task-form-btn cancel-btn" id="cancelTaskBtn">Cancel</button>
+                        <button class="task-form-btn save-btn" id="saveTaskBtn">Save</button>
+                    </div>
+                </div>
+
+                <button class="add-task-btn">
+                    <span class="plus-icon">+</span> Add Task
                 </button>
             </section>
+
         </main>
     </div>
+
+    <div class="modal-overlay" id="reportModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Activity Report</h2>
+                <button class="modal-close-btn" id="closeReportBtn">&times;</button>
+            </div>
+
+            <div class="modal-stats-grid">
+                <div class="modal-stat-box">
+                    <span class="modal-stat-num" id="modalFocusHours">0.0h</span>
+                    <span class="modal-stat-lbl">Hours Focused</span>
+                </div>
+                <div class="modal-stat-box">
+                    <span class="modal-stat-num" id="modalCyclesCount">0</span>
+                    <span class="modal-stat-lbl">Finished Sprints</span>
+                </div>
+            </div>
+
+            <div class="chart-wrapper">
+                <h3>Focus vs. Rest Distribution</h3>
+                <div class="bar-chart">
+                    <div class="chart-column">
+                        <div class="bar-fill-wrapper">
+                            <div class="bar-fill focus-bar" id="graphFocusBar" style="height: 0%;"></div>
+                        </div>
+                        <span class="bar-label">Focus Block</span>
+                    </div>
+                    <div class="chart-column">
+                        <div class="bar-fill-wrapper">
+                            <div class="bar-fill rest-bar" id="graphRestBar" style="height: 0%;"></div>
+                        </div>
+                        <span class="bar-label">Rest Block</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-card settings-card">
+            <div class="modal-header">
+                <h2>Timer Settings</h2>
+                <button class="modal-close-btn" id="closeSettingsBtn">&times;</button>
+            </div>
+
+            <div class="settings-section-block">
+                <h3>Time (Minutes)</h3>
+                <div class="time-inputs-grid">
+                    <div class="input-group">
+                        <label for="inputPomo">Pomodoro</label>
+                        <input type="number" id="inputPomo" min="1" max="60" value="25">
+                    </div>
+                    <div class="input-group">
+                        <label for="inputShort">Short Break</label>
+                        <input type="number" id="inputShort" min="1" max="60" value="5">
+                    </div>
+                    <div class="input-group">
+                        <label for="inputLong">Long Break</label>
+                        <input type="number" id="inputLong" min="1" max="60" value="15">
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section-block">
+                <div class="toggle-setting-row">
+                    <label for="inputLongInterval">Long Break Interval (Cycles)</label>
+                    <input type="number" id="inputLongInterval" min="1" max="10" value="4" class="inline-num-input">
+                </div>
+
+                <div class="toggle-setting-row">
+                    <label>Auto-start Breaks</label>
+                    <input type="checkbox" id="inputAutoBreak" class="custom-toggle">
+                </div>
+
+                <div class="toggle-setting-row">
+                    <label>Auto-start Pomodoros</label>
+                    <input type="checkbox" id="inputAutoPomo" class="custom-toggle">
+                </div>
+            </div>
+
+            <div class="settings-section-block">
+                <h3>Sound Alerts</h3>
+                <div class="sound-picker-row">
+                    <select id="inputSoundAlert" class="settings-select">
+
+                        <option value="digital-alarm-buzzer">Digital Alarm Buzzer</option>
+                        <option value="morning-clock-alarm">Morning Clock Alarm</option>
+                        <option value="sound-alert-in-hall">Sound alert-in Hall</option>
+                        <option value="vintage-warning-alarm">Vintage Warning</option>
+                    </select>
+                    <button class="test-sound-btn" id="testSoundBtn">🔊 Test</button>
+                </div>
+            </div>
+
+            <div class="settings-section-block">
+                <div class="notification-setup-row">
+                    <div>
+                        <h4>Desktop Notifications</h4>
+                        <p>Receive push notifications when cycles end</p>
+                    </div>
+                    <button class="notify-perm-btn" id="requestNotificationBtn">Enable</button>
+                </div>
+            </div>
+
+            <button class="settings-save-master-btn" id="saveSettingsBtn">Save Settings</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-card auth-card">
+            <button class="modal-close-btn auth-close-btn" id="closeAuthBtn">&times;</button>
+
+            <div class="auth-brand-header">
+                <span class="logo-icon">✓</span>
+                <h2>pomora</h2>
+            </div>
+
+            <div class="auth-view-block active" id="signInView">
+                <h3 class="auth-title">Log in to your account</h3>
+
+                <!-- <button class="google-auth-btn">
+          <span class="g-icon">G</span> Sign in with Google
+        </button> -->
+
+                <!-- <div class="auth-divider"><span>or email</span></div> -->
+
+                <form class="auth-form" id="signInForm" onsubmit="event.preventDefault();">
+                    <div class="auth-input-group">
+                        <label for="loginEmail">Email Address</label>
+                        <input type="email" id="loginEmail" placeholder="example@mail.com" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="auth-submit-master-btn">Log In</button>
+                </form>
+
+                <p class="auth-switch-prompt">
+                    New to Pomora? <button class="auth-toggle-view-link" id="switchToSignUp">Create account</button>
+                </p>
+            </div>
+
+            <div class="auth-view-block" id="signUpView">
+                <h3 class="auth-title">Create your student profile</h3>
+
+                <form class="auth-form" id="signUpForm" onsubmit="event.preventDefault();">
+                    <div class="auth-input-group">
+                        <label for="registerName">Full Name</label>
+                        <input type="text" id="registerName" placeholder="Your Name" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label for="registerEmail">Email Address</label>
+                        <input type="email" id="registerEmail" placeholder="name@school.edu" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" placeholder="Minimum 6 characters" required>
+                    </div>
+                    <button type="submit" class="auth-submit-master-btn">Create Account</button>
+                </form>
+
+                <p class="auth-switch-prompt">
+                    Already have an account? <button class="auth-toggle-view-link" id="switchToSignIn">Log in</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="globalToast" class="toast-banner">
+        <span id="toastMessage">Success Message Here</span>
+    </div>
+
 </body>
-<script src="js/app.js"></script>
+<link rel="stylesheet" href="./css/interactivity.css">
+<script src="./js/app.js"></script>
+
 </html>

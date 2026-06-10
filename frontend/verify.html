@@ -1,16 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Verification | Pomora</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        .verify-box { max-width: 450px; margin: 100px auto; padding: 40px; text-align: center; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .verify-box h2 { color: #a94242; margin-bottom: 15px; }
-        .verify-btn { display: inline-block; margin-top: 20px; background: #c15b5b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+        .verify-box {
+            max-width: 450px;
+            margin: 100px auto;
+            padding: 40px;
+            text-align: center;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .verify-box h2 {
+            color: #a94242;
+            margin-bottom: 15px;
+        }
+
+        .verify-btn {
+            display: inline-block;
+            margin-top: 20px;
+            background: #c15b5b;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
     </style>
+    <!-- <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/apple-touch-icon.png"> -->
+    <link rel="icon" type="image/png" sizes="50x50" href="./assets/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/img/favicon-16x16.png">
+    <link rel="manifest" href="./assets/img/site.webmanifest">
 </head>
+
 <body style="background: #fdf6f6; font-family: sans-serif;">
     <div class="verify-box">
         <h2 id="statusTitle">Verifying Your Profile...</h2>
@@ -23,7 +51,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const email = urlParams.get("email");
             const token = urlParams.get("token");
-            
+
             // Single production routing url helper destination
             const BACKEND_URL = "https://pomora-backend-api.onrender.com";
 
@@ -52,4 +80,5 @@
         });
     </script>
 </body>
+
 </html>

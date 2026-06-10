@@ -16,7 +16,7 @@ const PomodoroTimer = {
   currentMode: "pomodoro",
   pomodoroHistoryCount: 1,
 
-  // NEW: System clock reference point anchors to prevent mobile background drift
+  // System clock reference point anchors to prevent mobile background drift
   expectedEndTime: null,
   lastTickTimestamp: null,
 
@@ -239,7 +239,7 @@ const PomodoroTimer = {
         alertMsg = "Incredible focus! You earned a long break.";
         nextMode = "long";
       } else {
-        alertTitle = "Session Done! ☕";
+        alertTitle = "Session Done.";
         alertMsg = "Focus round complete! Time for a short break.";
         nextMode = "short";
       }

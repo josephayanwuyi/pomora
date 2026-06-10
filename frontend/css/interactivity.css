@@ -6,27 +6,27 @@
 
 /* New theme modifier classes for smooth state changes */
 .container-head.theme-pomodoro {
-    --bg-color: #ba4949;
-    background-color: #ba4949;
+    --bg-color: #D45D9E;
+    background-color: #D45D9E;
 }
 
 .container-head.theme-short {
-    --bg-color: #388e3c; /* Elegant, calming green for short breaks */
-    background-color: #388e3c;
+    --bg-color: #5262C7;
+    background-color: #5262C7;
 }
 
 .container-head.theme-long {
-    --bg-color: #3949ab; /* Deep, relaxing blue for long breaks */
-    background-color: #3949ab;
+    --bg-color: #4FA368; 
+    background-color: #4FA368;
 }
 
-/* Ensure the layout elements using var(--bg-color) dynamically transition too */
+
+
 .start-btn {
-    /* ... keep your existing styles ... */
     transition: color 0.4s ease, transform 0.1s ease;
 }
 
-/* --- Injected Task Items Layout styling --- */
+/* --- Task Items Layout styling --- */
 .tasks-list {
     width: 100%;
     display: flex;

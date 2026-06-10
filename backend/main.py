@@ -33,11 +33,12 @@ IS_POSTGRES = "postgres" in DATABASE_URL
 
 # --- EMAIL VERIFICATION API ---
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-# Your frontend URL where users will land to verify
+
+# frontend URL where users will land to after verification
 FRONTEND_URL = "https://pomora-omega.vercel.app"
 
 def get_db_connection():
-    """Dynamically routes traffic to cloud Postgres or local SQLite."""
+    # Dynamically routes traffic to cloud Postgres or local SQLite.
     if IS_POSTGRES:
         url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
         return psycopg2.connect(url)
@@ -45,7 +46,7 @@ def get_db_connection():
         return sqlite3.connect("pomora.db")
 
 def init_db():
-    """Initializes tables using the correct SQL dialect dynamically."""
+# Initializes tables using the correct SQL dialect dynamically.
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -101,16 +102,16 @@ def init_db():
                 ADD COLUMN IF NOT EXISTS is_verified INTEGER DEFAULT 0;
             """)
         else:
-            # Fallback tracking rules for your local development sqlite storage instances
+            # Fallback tracking rules for local development sqlite storage instances
             cursor.execute("PRAGMA table_info(users);")
             columns = [col[1] for col in cursor.fetchall()]
             if "is_verified" not in columns:
                 cursor.execute("ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0;")
                 
         conn.commit()
-        print("✅ Database schema is completely up to date!")
+        print("Database schema is completely up to date.")
     except Exception as migration_error:
-        print(f"ℹ️ Schema status check: {str(migration_error)}")
+        print(f"Schema status check: {str(migration_error)}")
         conn.rollback() # Safely discard transaction locks if any state drops
     finally:
         cursor.close()
@@ -134,7 +135,7 @@ def create_access_token(user_id: int, name: str, email: str) -> str:
         "user_id": user_id,
         "name": name,
         "email": email,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -174,6 +175,8 @@ class AnalyticsLogCreate(BaseModel):
     task_text: str
     duration_minutes: int
 
+
+
 # --- API ROUTE ENDPOINTS ---
 
 @app.post("/api/signup")
@@ -208,9 +211,9 @@ def signup(user: UserSignUp):
                     "Content-Type": "application/json"
                 },
                 json={
-                    "from": "Pomora App <onboarding@resend.dev>",
+                    "from": "Pomora App <onboarding@pomora.app>",
                     "to": [user.email],
-                    "subject": "Activate Your Pomora Account ⏱️",
+                    "subject": "Activate Your Pomora Account",
                     "html": f"""
                         <h3>Welcome to Pomora, {user.name}!</h3>
                         <p>Please click the secure link below to verify your email address and activate your production dashboard profile:</p>
@@ -314,7 +317,7 @@ def get_tasks(token_data: dict = Depends(verify_jwt_token)):
 @app.post("/api/tasks")
 def add_task(task: TaskCreate, token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
-    conn = get_db_connection()  # FIXED
+    conn = get_db_connection()
     cursor = conn.cursor()
     try:
         cursor.execute(
@@ -330,7 +333,7 @@ def add_task(task: TaskCreate, token_data: dict = Depends(verify_jwt_token)):
 @app.delete("/api/tasks/{task_id}")
 def delete_task_backend(task_id: str, token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
-    conn = get_db_connection()  # FIXED
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
     conn.commit()
@@ -338,10 +341,11 @@ def delete_task_backend(task_id: str, token_data: dict = Depends(verify_jwt_toke
     conn.close()
     return {"status": "success"}
 
+
 @app.post("/api/tasks/toggle/{task_id}")
 def toggle_task_backend(task_id: str, token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
-    conn = get_db_connection()  # FIXED
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT completed FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
     record = cursor.fetchone()
@@ -356,7 +360,7 @@ def toggle_task_backend(task_id: str, token_data: dict = Depends(verify_jwt_toke
 @app.post("/api/settings/save")
 def save_user_settings(data: SettingsUpdate, token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
-    conn = get_db_connection()  # FIXED
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     auto_break_int = 1 if data.auto_break else 0
@@ -378,10 +382,11 @@ def save_user_settings(data: SettingsUpdate, token_data: dict = Depends(verify_j
         cursor.close()
         conn.close()
 
+
 @app.post("/api/analytics/log")
 def log_focus_session(data: AnalyticsLogCreate, token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
-    conn = get_db_connection()  # FIXED
+    conn = get_db_connection()
     cursor = conn.cursor()
     try:
         cursor.execute("""

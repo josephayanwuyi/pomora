@@ -6,7 +6,7 @@
 }
 
 :root {
-  --bg-color: #ba4949;
+  --bg-color: #D45D9E;
   --card-bg: rgba(255, 255, 255, 0.1);
   --card-bg-hover: rgba(255, 255, 255, 0.2);
   --text-main: #ffffff;
@@ -366,7 +366,7 @@ button {
   padding-left: 4px;
 }
 
-li .bold {
+.bold {
   font-weight: 700;
   color: #111111;
 }
@@ -685,3 +685,4 @@ li .bold {
     font-size: 12px;
   }
 }
+
