@@ -1,10 +1,11 @@
 // --- PRODUCTION SERVER ROUTING CONFIG ---
-const IS_PRODUCTION = window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost";
+const IS_PRODUCTION =
+  window.location.hostname !== "127.0.0.1" &&
+  window.location.hostname !== "localhost";
 
 const BACKEND_URL = "https://pomora-backend-api.onrender.com";
 
 const API_BASE_URL = IS_PRODUCTION ? BACKEND_URL : "${API_BASE_URL}";
-
 
 // Pomora - Master Productivity Application Architecture Engine
 
@@ -14,6 +15,10 @@ const PomodoroTimer = {
   isRunning: false,
   currentMode: "pomodoro",
   pomodoroHistoryCount: 1,
+
+  // NEW: System clock reference point anchors to prevent mobile background drift
+  expectedEndTime: null,
+  lastTickTimestamp: null,
 
   // Global Configurable Variable State Options Profile Defaults
   config: {
@@ -32,7 +37,7 @@ const PomodoroTimer = {
     this.modeButtons = document.querySelectorAll(".mode-btn");
     this.progressBarFill = document.querySelector(".progress-bar-fill");
     this.containerHead = document.querySelector(".container-head");
-    this.settingsOpenBtn = document.querySelectorAll(".nav-btn")[1]; // Second button in nav area (Setting)
+    this.settingsOpenBtn = document.querySelectorAll(".nav-btn")[1];
 
     this.taskNumberDisplay = document.getElementById("taskNumberDisplay");
     this.taskMessageDisplay = document.getElementById("taskMessageDisplay");
@@ -40,7 +45,6 @@ const PomodoroTimer = {
     this.restTimeDisplay = document.getElementById("totalRestTimeDisplay");
     this.cyclesDisplay = document.getElementById("pomodorosCompletedDisplay");
 
-    // Add these inside initElements() in PomodoroTimer
     this.resetBtn = document.getElementById("resetTimerBtn");
     this.skipBtn = document.getElementById("skipTimerBtn");
   },
@@ -49,7 +53,6 @@ const PomodoroTimer = {
     this.initElements();
     if (!this.display || !this.startBtn) return;
 
-    // Load historical state records
     const savedTime = localStorage.getItem("pomora_timeLeft");
     const savedMode = localStorage.getItem("pomora_currentMode");
     const savedCount = localStorage.getItem("pomora_historyCount");
@@ -59,19 +62,15 @@ const PomodoroTimer = {
     if (savedCount) this.pomodoroHistoryCount = parseInt(savedCount, 10);
     if (savedStats) this.stats = JSON.parse(savedStats);
 
-    // --- UNIFIED STORAGE FALLBACK CORE ---
     const activeUserData = localStorage.getItem("pomora_active_user");
     if (activeUserData) {
       const user = JSON.parse(activeUserData);
-      // Prioritize user profile configurations parsed from backend
       if (user.config) this.config = user.config;
 
-      // UI Session RESTORATION: Keep navbar updated across page refreshes
       const loginNavBtn = document.querySelector(".login-btn");
       if (loginNavBtn)
         loginNavBtn.textContent = `Hi, ${user.name.split(" ")[0]}`;
     } else {
-      // Guest Profile Fallback
       const savedConfig = localStorage.getItem("pomora_user_config");
       if (savedConfig) this.config = JSON.parse(savedConfig);
     }
@@ -99,7 +98,6 @@ const PomodoroTimer = {
         if (targetMode === "long break") this.switchMode("long");
       });
     });
-    // Add these inside registerEvents() in PomodoroTimer
     if (this.resetBtn)
       this.resetBtn.addEventListener("click", () => this.resetCurrentRound());
     if (this.skipBtn)
@@ -111,23 +109,49 @@ const PomodoroTimer = {
     else this.start();
   },
 
+  // FIXED: Overhauled to secure dynamic epoch timestamp reference targets
   start() {
     this.isRunning = true;
     this.startBtn.textContent = "PAUSE";
     this.startBtn.style.boxShadow = "none";
     this.startBtn.style.transform = "translateY(6px)";
 
+    const now = Date.now();
+    // Establish a fixed system wall clock target deadline for execution loops
+    this.expectedEndTime = now + this.timeLeft * 1000;
+    this.lastTickTimestamp = now;
+
     this.timerId = setInterval(() => {
-      this.timeLeft--;
+      const currentTickTime = Date.now();
 
-      if (this.currentMode === "pomodoro") this.stats.totalFocusSeconds++;
-      else this.stats.totalRestSeconds++;
+      // Calculate true delta gap to determine exactly how many seconds passed while frozen
+      const msRemaining = this.expectedEndTime - currentTickTime;
+      const actualElapsedSeconds = Math.round(
+        (currentTickTime - this.lastTickTimestamp) / 1000,
+      );
 
-      this.updateDisplay();
-      this.renderAnalytics();
+      // Convert true milliseconds parameter back down to remaining counter integers
+      this.timeLeft = Math.ceil(msRemaining / 1000);
+      this.lastTickTimestamp = currentTickTime;
 
+      // Safely apply true delta durations to analytics logs to catch up instantly on screen wake
+      if (actualElapsedSeconds > 0) {
+        if (this.currentMode === "pomodoro") {
+          this.stats.totalFocusSeconds += actualElapsedSeconds;
+        } else {
+          this.stats.totalRestSeconds += actualElapsedSeconds;
+        }
+      }
+
+      // Check if target deadline boundaries collapsed to zero
       if (this.timeLeft <= 0) {
+        this.timeLeft = 0;
+        this.updateDisplay();
+        this.renderAnalytics();
         this.handleAutomatedProgression();
+      } else {
+        this.updateDisplay();
+        this.renderAnalytics();
       }
     }, 1000);
   },
@@ -151,13 +175,8 @@ const PomodoroTimer = {
   },
 
   resetCurrentRound() {
-    // Halt any running interval loops instantly
     this.pause();
-
-    // Recalibrate clock back to full duration of current active mode
     this.timeLeft = this.config.durations[this.currentMode] * 60;
-
-    // Refresh display numbers and progress bars cleanly
     this.updateDisplay();
     this.saveStateToStorage();
     console.log(`Timer Reset: Returned to start of ${this.currentMode} round.`);
@@ -166,7 +185,6 @@ const PomodoroTimer = {
   skipCurrentRound() {
     if (confirm("Are you sure you want to skip this current round?")) {
       console.log(`Timer Skip: Forcing automated progression pipeline.`);
-      // Force code to act exactly as if the timer hit 00:00 naturally
       this.handleAutomatedProgression();
     }
   },
@@ -194,6 +212,11 @@ const PomodoroTimer = {
     this.pause();
     this.playAlertSound(this.config.selectedSound);
 
+    if ("vibrate" in navigator) {
+      // Vibrates for 500ms, pauses for 300ms, vibrates for 500ms
+      navigator.vibrate([500, 300, 500]);
+    }
+
     let nextMode = "pomodoro";
     let alertMsg = "";
     let alertTitle = "Pomora Timer";
@@ -201,18 +224,15 @@ const PomodoroTimer = {
     if (this.currentMode === "pomodoro") {
       this.stats.cyclesCompleted++;
 
-      // --- NEW: TASK-LINKED ANALYTICS DISPATCH PIPELINE ---
       const activeTasks =
         typeof TaskManager !== "undefined"
           ? TaskManager.tasks.filter((t) => !t.completed)
           : [];
-      // If tasks exist, grab the top one. If not, log it as a generic session.
       const currentTaskName =
         activeTasks.length > 0 ? activeTasks[0].text : "Generic Focus Session";
       const sessionMinutes = this.config.durations.pomodoro;
 
       this.dispatchAnalyticsToBackend(currentTaskName, sessionMinutes);
-      // -----------------------------------------------------
 
       if (this.pomodoroHistoryCount % this.config.longBreakInterval === 0) {
         alertTitle = "Break Time! 🏆";
@@ -268,7 +288,10 @@ const PomodoroTimer = {
 
     if (this.currentMode === "pomodoro") {
       this.taskNumberDisplay.style.display = "inline-block";
-      const activeTasks = TaskManager.tasks.filter((t) => !t.completed);
+      const activeTasks =
+        typeof TaskManager !== "undefined"
+          ? TaskManager.tasks.filter((t) => !t.completed)
+          : [];
 
       if (activeTasks.length > 0) {
         this.taskNumberDisplay.textContent = "Focusing on:";
@@ -315,31 +338,31 @@ const PomodoroTimer = {
   },
 
   async dispatchAnalyticsToBackend(taskText, minutes) {
-        const token = localStorage.getItem("pomora_token");
-        // Only run network dispatching if a user is actively logged in, otherwise skip
-        if (!token) {
-            console.log("Guest mode: Skipping backend analytics sync.");
-            return;
-        }
+    const token = localStorage.getItem("pomora_token");
+    if (!token) {
+      console.log("Guest mode: Skipping backend analytics sync.");
+      return;
+    }
 
-        try {
-            // await fetch("${API_BASE_URL}/api/analytics/log", {
-            await fetch(`${API_BASE_URL}/api/analytics/log`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    task_text: taskText,
-                    duration_minutes: minutes
-                })
-            });
-            console.log(`Analytics Logged: Focused on "${taskText}" for ${minutes} mins.`);
-        } catch (error) {
-            console.error("Failed to sync focus analytics log to server: ", error);
-        }
-    },
+    try {
+      await fetch(`${API_BASE_URL}/api/analytics/log`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          task_text: taskText,
+          duration_minutes: minutes,
+        }),
+      });
+      console.log(
+        `Analytics Logged: Focused on "${taskText}" for ${minutes} mins.`,
+      );
+    } catch (error) {
+      console.error("Failed to sync focus analytics log to server: ", error);
+    }
+  },
 
   playAlertSound(soundType) {
     if (!soundType) soundType = "digital-alarm-buzzer";
@@ -446,12 +469,15 @@ const SettingsManager = {
       durations: {
         pomodoro: Math.max(1, parseInt(this.inputPomo.value, 10) || 25),
         short: Math.max(1, parseInt(this.inputShort.value, 10) || 5),
-        long: Math.max(1, parseInt(this.inputLong.value, 10) || 15)
+        long: Math.max(1, parseInt(this.inputLong.value, 10) || 15),
       },
-      longBreakInterval: Math.max(1, parseInt(this.inputLongInterval.value, 10) || 4),
+      longBreakInterval: Math.max(
+        1,
+        parseInt(this.inputLongInterval.value, 10) || 4,
+      ),
       autoStartBreaks: this.inputAutoBreak.checked,
       autoStartPomodoros: this.inputAutoPomo.checked,
-      selectedSound: this.inputSoundAlert.value
+      selectedSound: this.inputSoundAlert.value,
     };
 
     // Instantly update engine's live configuration rules in memory
@@ -469,7 +495,7 @@ const SettingsManager = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             pomo_time: updatedConfig.durations.pomodoro,
@@ -1098,76 +1124,79 @@ function showToast(message, type = "success") {
 }
 
 const DashboardManager = {
-    currentRange: "7days",
+  currentRange: "7days",
 
-    init() {
-        this.filterButtons = document.querySelectorAll(".filter-btn");
-        this.chartContainer = document.getElementById("dashboardTrendChart");
-        this.hoursDisplay = document.getElementById("dashTotalHours");
-        this.streakDisplay = document.getElementById("dashStreak");
+  init() {
+    this.filterButtons = document.querySelectorAll(".filter-btn");
+    this.chartContainer = document.getElementById("dashboardTrendChart");
+    this.hoursDisplay = document.getElementById("dashTotalHours");
+    this.streakDisplay = document.getElementById("dashStreak");
 
-        if (!this.chartContainer) return;
-        this.registerEvents();
-    },
+    if (!this.chartContainer) return;
+    this.registerEvents();
+  },
 
-    registerEvents() {
-        this.filterButtons.forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                this.filterButtons.forEach(b => b.classList.remove("active"));
-                e.target.classList.add("active");
-                this.currentRange = e.target.getAttribute("data-range");
-                this.fetchDashboardData();
-            });
-        });
-    },
+  registerEvents() {
+    this.filterButtons.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        this.filterButtons.forEach((b) => b.classList.remove("active"));
+        e.target.classList.add("active");
+        this.currentRange = e.target.getAttribute("data-range");
+        this.fetchDashboardData();
+      });
+    });
+  },
 
-    async fetchDashboardData() {
-        const token = localStorage.getItem("pomora_token");
-        if (!token) return;
+  async fetchDashboardData() {
+    const token = localStorage.getItem("pomora_token");
+    if (!token) return;
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/analytics/dashboard?range_type=${this.currentRange}`, {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                this.renderDashboard(data);
-            }
-        } catch (error) {
-            console.error("Dashboard calculation link error: ", error);
-        }
-    },
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/analytics/dashboard?range_type=${this.currentRange}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
-    renderDashboard(data) {
-        // Update basic tracking cards text variables
-        this.hoursDisplay.textContent = `${data.summary.total_hours}h`;
-        this.streakDisplay.textContent = `${data.summary.streak_days} Days`;
+      if (response.ok) {
+        const data = await response.json();
+        this.renderDashboard(data);
+      }
+    } catch (error) {
+      console.error("Dashboard calculation link error: ", error);
+    }
+  },
 
-        // Reset and clear old rendering chart elements
-        this.chartContainer.innerHTML = "";
+  renderDashboard(data) {
+    // Update basic tracking cards text variables
+    this.hoursDisplay.textContent = `${data.summary.total_hours}h`;
+    this.streakDisplay.textContent = `${data.summary.streak_days} Days`;
 
-        if (data.daily_trends.length === 0) {
-            this.chartContainer.innerHTML = `<p class="empty-log-text">No focus sessions tracked in this timeframe yet.</p>`;
-            return;
-        }
+    // Reset and clear old rendering chart elements
+    this.chartContainer.innerHTML = "";
 
-        // Find highest volume minute marker day to balance graph heights proportionally
-        const maxMinutes = Math.max(...data.daily_trends.map(d => d.minutes), 1);
+    if (data.daily_trends.length === 0) {
+      this.chartContainer.innerHTML = `<p class="empty-log-text">No focus sessions tracked in this timeframe yet.</p>`;
+      return;
+    }
 
-        // Dynamically build and scale HTML layout bar pillars
-        data.daily_trends.forEach(day => {
-            const barPercentage = (day.minutes / maxMinutes) * 100;
-            const barWrapper = document.createElement("div");
-            barWrapper.className = "chart-bar-wrapper";
-            barWrapper.innerHTML = `
+    // Find highest volume minute marker day to balance graph heights proportionally
+    const maxMinutes = Math.max(...data.daily_trends.map((d) => d.minutes), 1);
+
+    // Dynamically build and scale HTML layout bar pillars
+    data.daily_trends.forEach((day) => {
+      const barPercentage = (day.minutes / maxMinutes) * 100;
+      const barWrapper = document.createElement("div");
+      barWrapper.className = "chart-bar-wrapper";
+      barWrapper.innerHTML = `
                 <div class="chart-bar-fill" style="height: ${barPercentage}%" title="${day.minutes} Mins on ${day.date}"></div>
                 <span class="chart-date-lbl">${day.date.split("-")[2]}</span>
             `;
-            this.chartContainer.appendChild(barWrapper);
-        });
-    }
+      this.chartContainer.appendChild(barWrapper);
+    });
+  },
 };
 
 /**
@@ -1177,80 +1206,86 @@ const DashboardManager = {
  * Pomora - Dropdown Navigation Dashboard & Overlay View Router
  */
 const NavigationManager = {
-    init() {
-        this.menuBtn = document.getElementById("moreMenuBtn");
-        this.dropdownCard = document.getElementById("moreDropdownCard");
-        this.dashboardBtn = document.getElementById("goToDashboardBtn");
-        this.closeOverlayBtn = document.getElementById("closeDashboardOverlayBtn");
-        this.logoutBtn = document.getElementById("dropdownLogoutBtn");
+  init() {
+    this.menuBtn = document.getElementById("moreMenuBtn");
+    this.dropdownCard = document.getElementById("moreDropdownCard");
+    this.dashboardBtn = document.getElementById("goToDashboardBtn");
+    this.closeOverlayBtn = document.getElementById("closeDashboardOverlayBtn");
+    this.logoutBtn = document.getElementById("dropdownLogoutBtn");
 
-        // Workspace Overlay Wrapper Selection Target Target Hooks
-        this.fullDashboardOverlay = document.getElementById("fullPageDashboard");
+    // Workspace Overlay Wrapper Selection Target Target Hooks
+    this.fullDashboardOverlay = document.getElementById("fullPageDashboard");
 
-        if (!this.menuBtn || !this.dropdownCard || !this.fullDashboardOverlay) return;
+    if (!this.menuBtn || !this.dropdownCard || !this.fullDashboardOverlay)
+      return;
 
-        this.registerEvents();
-    },
+    this.registerEvents();
+  },
 
-    registerEvents() {
-        // Toggle Dropdown Options Menu Card Display layout
-        this.menuBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            this.dropdownCard.classList.toggle("show");
-        });
+  registerEvents() {
+    // Toggle Dropdown Options Menu Card Display layout
+    this.menuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.dropdownCard.classList.toggle("show");
+    });
 
-        // Close dropdown context lists when clicking workspace dead areas
-        document.addEventListener("click", () => {
-            this.dropdownCard.classList.remove("show");
-        });
+    // Close dropdown context lists when clicking workspace dead areas
+    document.addEventListener("click", () => {
+      this.dropdownCard.classList.remove("show");
+    });
 
-        // Trigger Launch: Open Full-Screen Performance Dashboard Overlay
-        this.dashboardBtn.addEventListener("click", () => {
-            const token = localStorage.getItem("pomora_token");
-            if (!token) {
-                showToast("Please log in to view performance analytics metrics!", "error");
-                return;
-            }
-            this.openDashboardOverlay();
-        });
+    // Trigger Launch: Open Full-Screen Performance Dashboard Overlay
+    this.dashboardBtn.addEventListener("click", () => {
+      const token = localStorage.getItem("pomora_token");
+      if (!token) {
+        showToast(
+          "Please log in to view performance analytics metrics!",
+          "error",
+        );
+        return;
+      }
+      this.openDashboardOverlay();
+    });
 
-        // Dismiss Launch: Close full-screen overlay when clicking Close (×) button
-        if (this.closeOverlayBtn) {
-            this.closeOverlayBtn.addEventListener("click", () => this.closeDashboardOverlay());
-        }
-
-        // Dismiss Launch: Close overlay when clicking outside the inner modal card container box
-        this.fullDashboardOverlay.addEventListener("click", (e) => {
-            if (e.target === this.fullDashboardOverlay) {
-                this.closeDashboardOverlay();
-            }
-        });
-
-        // Account Logout handling hook
-        if (this.logoutBtn) {
-            this.logoutBtn.addEventListener("click", () => {
-                if (typeof AuthManager !== 'undefined') AuthManager.handleLogout();
-            });
-        }
-    },
-
-    openDashboardOverlay() {
-        // Hide the floating navigation menu options popup card
-        this.dropdownCard.classList.remove("show");
-
-        // Fire full screen visibility transitions
-        this.fullDashboardOverlay.classList.add("show");
-
-        // Dispatch background query payload fetch signals to secure API instantly
-        if (typeof DashboardManager !== 'undefined') {
-            DashboardManager.fetchDashboardData();
-        }
-    },
-
-    closeDashboardOverlay() {
-        // Animate out cleanly smoothly
-        this.fullDashboardOverlay.classList.remove("show");
+    // Dismiss Launch: Close full-screen overlay when clicking Close (×) button
+    if (this.closeOverlayBtn) {
+      this.closeOverlayBtn.addEventListener("click", () =>
+        this.closeDashboardOverlay(),
+      );
     }
+
+    // Dismiss Launch: Close overlay when clicking outside the inner modal card container box
+    this.fullDashboardOverlay.addEventListener("click", (e) => {
+      if (e.target === this.fullDashboardOverlay) {
+        this.closeDashboardOverlay();
+      }
+    });
+
+    // Account Logout handling hook
+    if (this.logoutBtn) {
+      this.logoutBtn.addEventListener("click", () => {
+        if (typeof AuthManager !== "undefined") AuthManager.handleLogout();
+      });
+    }
+  },
+
+  openDashboardOverlay() {
+    // Hide the floating navigation menu options popup card
+    this.dropdownCard.classList.remove("show");
+
+    // Fire full screen visibility transitions
+    this.fullDashboardOverlay.classList.add("show");
+
+    // Dispatch background query payload fetch signals to secure API instantly
+    if (typeof DashboardManager !== "undefined") {
+      DashboardManager.fetchDashboardData();
+    }
+  },
+
+  closeDashboardOverlay() {
+    // Animate out cleanly smoothly
+    this.fullDashboardOverlay.classList.remove("show");
+  },
 };
 
 /**
@@ -1258,36 +1293,44 @@ const NavigationManager = {
  * Periodically pings the Render backend to prevent server sleep cycles
  */
 const PomoraKeepAlive = {
-    init() {
-        // Only trigger the background heartbeat ping loop if running live in production
-        if (typeof IS_LOCAL !== 'undefined' && IS_LOCAL) {
-            console.log("Local environment detected. Skipping keep-alive heartbeat loop.");
-            return;
-        }
-
-        console.log("Pomora Keep-Alive Engine initialized. Heartbeat cycle active.");
-        
-        // Fire an immediate initial ping to wake things up, then loop every 12 minutes
-        this.pingBackend();
-        
-        // 12 minutes = 12 * 60 * 1000 = 720,000 milliseconds
-        setInterval(() => {
-            this.pingBackend();
-        }, 720000);
-    },
-
-    async pingBackend() {
-        try {
-            // A lightweight HEAD request consumes almost zero data but alerts the server process
-            await fetch(`${API_BASE_URL}/api/tasks`, { method: "HEAD" });
-            console.log("Keep-alive heartbeat signal dispatched successfully to cloud server.");
-        } catch (error) {
-            // Fail silently in the background without breaking user interaction threads
-            console.warn("Keep-alive heartbeat connection sequence experienced a blip:", error);
-        }
+  init() {
+    // Only trigger the background heartbeat ping loop if running live in production
+    if (typeof IS_LOCAL !== "undefined" && IS_LOCAL) {
+      console.log(
+        "Local environment detected. Skipping keep-alive heartbeat loop.",
+      );
+      return;
     }
-};
 
+    console.log(
+      "Pomora Keep-Alive Engine initialized. Heartbeat cycle active.",
+    );
+
+    // Fire an immediate initial ping to wake things up, then loop every 12 minutes
+    this.pingBackend();
+
+    // 12 minutes = 12 * 60 * 1000 = 720,000 milliseconds
+    setInterval(() => {
+      this.pingBackend();
+    }, 720000);
+  },
+
+  async pingBackend() {
+    try {
+      // A lightweight HEAD request consumes almost zero data but alerts the server process
+      await fetch(`${API_BASE_URL}/api/tasks`, { method: "HEAD" });
+      console.log(
+        "Keep-alive heartbeat signal dispatched successfully to cloud server.",
+      );
+    } catch (error) {
+      // Fail silently in the background without breaking user interaction threads
+      console.warn(
+        "Keep-alive heartbeat connection sequence experienced a blip:",
+        error,
+      );
+    }
+  },
+};
 
 // DOM Bootloader Hook initializations
 document.addEventListener("DOMContentLoaded", () => {
@@ -1296,7 +1339,6 @@ document.addEventListener("DOMContentLoaded", () => {
   ReportManager.init();
   SettingsManager.init();
   AuthManager.init();
-  
 
   // NEW SYSTEM PACK INITIALIZATIONS
   DashboardManager.init();
