@@ -343,7 +343,7 @@ def delete_task_backend(task_id: str, token_data: dict = Depends(verify_jwt_toke
     return {"status": "success"}
 
 
-@app.post("/api/tasks/toggle/{task_id}")
+@app.put("/api/tasks/toggle/{task_id}")
 def toggle_task_backend(task_id: str, token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
     conn = get_db_connection()
