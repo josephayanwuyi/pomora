@@ -592,8 +592,9 @@ const TaskManager = {
     }
   },
 
+  // FIXED & UNIFIED: Creates local state array entry, checks token, dispatches database payload securely
   async addTask(text) {
-    const stringId = String(Date.now());
+    const stringId = String(Date.now()); // Structured uniform ID token string
     const newTask = { id: stringId, text: text, completed: false };
 
     this.tasks.push(newTask);
@@ -603,37 +604,57 @@ const TaskManager = {
     const token = localStorage.getItem("pomora_token");
     if (token) {
       try {
-        await fetch(`${API_BASE_URL}/api/tasks`, {
+        const response = await fetch(`${API_BASE_URL}/api/tasks`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            "Authorization": `Bearer ${token}` // Fixed: Restored core validation gate
           },
-          body: JSON.stringify({ id: stringId, text: text }), // No user_id needed in body anymore!
+          body: JSON.stringify({
+            id: stringId,
+            text: text,
+            completed: 0 // Explicit integer state flag default mapping
+          }),
         });
+        if (!response.ok) console.error("Database rejected task creation.");
       } catch (err) {
         console.error("Database task add sync crash: ", err);
       }
     } else {
+      // Guest Storage Pipeline Mode
       localStorage.setItem("pomora_tasks", JSON.stringify(this.tasks));
     }
   },
 
+  // FIXED & UNIFIED: Toggles target local state mapping, updates via backend authenticated pipeline route
   async toggleTask(id) {
+    let targetedTask = null;
     this.tasks = this.tasks.map((task) => {
-      if (task.id === id) return { ...task, completed: !task.completed };
+      if (task.id === id) {
+        targetedTask = { ...task, completed: !task.completed };
+        return targetedTask;
+      }
       return task;
     });
+    
     this.render();
     PomodoroTimer.updateAutomationText();
 
     const token = localStorage.getItem("pomora_token");
-    if (token) {
+    if (token && targetedTask) {
       try {
-        await fetch(`${API_BASE_URL}/api/tasks/toggle/${id}`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+        // Switch to standard resource endpoint tracking instead of custom un-authed toggles
+        const response = await fetch(`${API_BASE_URL}/api/tasks/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            completed: targetedTask.completed ? 1 : 0
+          })
         });
+        if (!response.ok) console.error("Database rejected task state patch.");
       } catch (err) {
         console.error("Database status toggle sync failed: ", err);
       }
@@ -642,8 +663,9 @@ const TaskManager = {
     }
   },
 
+  // FIXED & UNIFIED: Completely drops target parameters from local array and purges row from PostgreSQL database
   async deleteTask(id, event) {
-    event.stopPropagation();
+    if (event) event.stopPropagation();
     this.tasks = this.tasks.filter((task) => task.id !== id);
     this.render();
     PomodoroTimer.updateAutomationText();
@@ -651,16 +673,42 @@ const TaskManager = {
     const token = localStorage.getItem("pomora_token");
     if (token) {
       try {
-        await fetch(`${API_BASE_URL}/api/tasks/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/tasks/${id}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (!response.ok) console.error("Database rejected task deletion execution.");
       } catch (err) {
         console.error("Database deletion sync failure: ", err);
       }
     } else {
       localStorage.setItem("pomora_tasks", JSON.stringify(this.tasks));
     }
+  },
+
+  // FIXED & UNIFIED: Loops cleanly through active sessions to clear profile dashboard
+  clearAllTasks() {
+    this.popConfettiBurst();
+    setTimeout(async () => {
+      const token = localStorage.getItem("pomora_token");
+      if (token) {
+        // Wipe current database batch records sequentially
+        for (let t of this.tasks) {
+          try {
+            await fetch(`${API_BASE_URL}/api/tasks/${t.id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          } catch (e) {
+            console.error(`Failed to batch delete subtask ${t.id}:`, e);
+          }
+        }
+      }
+      this.tasks = [];
+      localStorage.removeItem("pomora_tasks");
+      this.render();
+      PomodoroTimer.updateAutomationText();
+    }, 400);
   },
 
   showForm() {
@@ -682,94 +730,6 @@ const TaskManager = {
     } else {
       this.inputField.focus();
     }
-  },
-
-  async addTask(text) {
-    const stringId = String(Date.now()); // Structured uniform ID token string
-    const newTask = { id: stringId, text: text, completed: false };
-
-    this.tasks.push(newTask);
-    this.render();
-    PomodoroTimer.updateAutomationText();
-
-    if (this.activeUserId) {
-      // Blaster pipeline request payload packet directly to SQLite tables
-      try {
-        await fetch("${API_BASE_URL}/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: stringId,
-            user_id: this.activeUserId,
-            text: text,
-          }),
-        });
-      } catch (err) {
-        console.error("Database task add sync crash: ", err);
-      }
-    } else {
-      localStorage.setItem("pomora_tasks", JSON.stringify(this.tasks));
-    }
-  },
-
-  async toggleTask(id) {
-    this.tasks = this.tasks.map((task) => {
-      if (task.id === id) return { ...task, completed: !task.completed };
-      return task;
-    });
-    this.render();
-    PomodoroTimer.updateAutomationText();
-
-    if (this.activeUserId) {
-      try {
-        await fetch(`${API_BASE_URL}/api/tasks/toggle/${id}`, {
-          method: "POST",
-        });
-      } catch (err) {
-        console.error("Database status toggle sync failed: ", err);
-      }
-    } else {
-      localStorage.setItem("pomora_tasks", JSON.stringify(this.tasks));
-    }
-  },
-
-  async deleteTask(id, event) {
-    event.stopPropagation();
-    this.tasks = this.tasks.filter((task) => task.id !== id);
-    this.render();
-    PomodoroTimer.updateAutomationText();
-
-    if (this.activeUserId) {
-      try {
-        await fetch(`${API_BASE_URL}/api/tasks/${id}`, {
-          method: "DELETE",
-        });
-      } catch (err) {
-        console.error("Database deletion sync failure: ", err);
-      }
-    } else {
-      localStorage.setItem("pomora_tasks", JSON.stringify(this.tasks));
-    }
-  },
-
-  clearAllTasks() {
-    this.popConfettiBurst();
-    setTimeout(async () => {
-      if (this.activeUserId) {
-        // Wipe current database batch records sequentially
-        for (let t of this.tasks) {
-          try {
-            await fetch(`${API_BASE_URL}/api/tasks/${t.id}`, {
-              method: "DELETE",
-            });
-          } catch (e) {}
-        }
-      }
-      this.tasks = [];
-      localStorage.removeItem("pomora_tasks");
-      this.render();
-      PomodoroTimer.updateAutomationText();
-    }, 400);
   },
 
   popConfettiBurst() {
