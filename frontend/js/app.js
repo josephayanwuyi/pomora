@@ -366,11 +366,25 @@ const PomodoroTimer = {
 
   playAlertSound(soundType) {
     if (!soundType) soundType = "digital-alarm-buzzer";
-    const audioTrack = new Audio(`assets/sounds/${soundType}.wav`);
+    
+    const baseLocation = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+    
+    // Flawless absolute URL that works everywhere
+    const cleanPath = `${baseLocation}/assets/sounds/${soundType.trim()}.wav`;
+    // console.log("Universal audio track loader pulling from:", cleanPath);
+
+    const audioTrack = new Audio(cleanPath);
     audioTrack.volume = 0.6;
+    audioTrack.preload = "auto"; 
+
     audioTrack
       .play()
-      .catch((err) => console.log("Audio play request blocked: ", err));
+      .then(() => {
+        // console.log("Alarm sound played smoothly!");
+      })
+      .catch((err) => {
+        console.error("Audio play request blocked by browser: ", err);
+      });
   },
 };
 
