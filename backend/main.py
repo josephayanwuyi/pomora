@@ -468,3 +468,33 @@ def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depend
         }
     }
 
+# --- ADD THIS INSIDE BACKEND/MAIN.PY (PUBLIC HEALTH ENDPOINT) ---
+
+@app.get("/api/health")
+def database_and_server_health_check():
+    """
+    Public diagnostic health checkpoint for uptime monitoring tools.
+    Bypasses JWT authentication gates to verify application runtime stability.
+    """
+    try:
+        # 1. Test database pool to make sure connection rows aren't stalled
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1;") # Fast lightweight execution query
+        cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        # 2. Return a 200 OK status verification payload structure
+        return {
+            "status": "healthy",
+            "environment": "production",
+            "database": "connected",
+            "message": "Pomora core engine is operational."
+        }
+    except Exception as database_error:
+        # If the database goes down or hits connection limits, return a 500 Server Error
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Core system degradation detected: {str(database_error)}"
+        )
