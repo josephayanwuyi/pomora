@@ -470,7 +470,7 @@ def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depend
 
 # --- PUBLIC HEALTH ENDPOINT ---
 
-@app.route("/api/health", methods=["GET", "HEAD"])
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def database_and_server_health_check(request: Request):
     """
     Public diagnostic health checkpoint for uptime monitoring tools.
