@@ -6,7 +6,7 @@ import os
 import psycopg2
 import requests
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -468,10 +468,10 @@ def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depend
         }
     }
 
-# --- ADD THIS INSIDE BACKEND/MAIN.PY (PUBLIC HEALTH ENDPOINT) ---
+# --- PUBLIC HEALTH ENDPOINT ---
 
-@app.get("/api/health")
-def database_and_server_health_check():
+@app.route("/api/health", methods=["GET", "HEAD"])
+def database_and_server_health_check(request: Request):
     """
     Public diagnostic health checkpoint for uptime monitoring tools.
     Bypasses JWT authentication gates to verify application runtime stability.
