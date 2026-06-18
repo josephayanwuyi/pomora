@@ -179,12 +179,12 @@ const PomodoroTimer = {
     this.timeLeft = this.config.durations[this.currentMode] * 60;
     this.updateDisplay();
     this.saveStateToStorage();
-    console.log(`Timer Reset: Returned to start of ${this.currentMode} round.`);
+    // console.log(`Timer Reset: Returned to start of ${this.currentMode} round.`);
   },
 
   skipCurrentRound() {
     if (confirm("Are you sure you want to skip this current round?")) {
-      console.log(`Timer Skip: Forcing automated progression pipeline.`);
+      // console.log(`Timer Skip: Forcing automated progression pipeline.`);
       this.handleAutomatedProgression();
     }
   },

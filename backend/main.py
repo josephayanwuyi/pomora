@@ -12,6 +12,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 
+
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
+
+
 app = FastAPI(title="Pomora Backend API")
 
 # --- CORS SECURITY POLICY ---
@@ -33,7 +38,9 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///pomora.db")
 IS_POSTGRES = "postgres" in DATABASE_URL
 
 # --- EMAIL VERIFICATION API ---
-RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+brevo_config = sib_api_v3_sdk.Configuration()
+brevo_config.api_key['api-key'] = os.environ.get("BREVO_API_KEY", "")
+mail_api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(brevo_config))
 
 # frontend URL where users will land to after verification
 FRONTEND_URL = "https://pomora-omega.vercel.app"
@@ -203,32 +210,59 @@ def signup(user: UserSignUp):
         verification_token = secure_password[-15:].replace("/", "").replace(".", "")
         verification_link = f"{FRONTEND_URL}/verify.html?email={user.email}&token={verification_token}"
         
-        # Fire the verification email out via Resend API
-        if RESEND_API_KEY:
-            requests.post(
-                "https://api.resend.com/emails",
-                headers={
-                    "Authorization": f"Bearer {RESEND_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "from": "Pomora App <onboarding@resend.dev>",
-                    "to": [user.email],
-                    "subject": "Activate Your Pomora Account",
-                    "html": f"""
-                        <h3>Welcome to Pomora, {user.name}!</h3>
-                        <p>Please click the secure link below to verify your email address and activate your production dashboard profile:</p>
-                        <p><a href="{verification_link}" style="background:#c15b5b; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; display:inline-block;">Verify My Email</a></p>
+        # ==========================================================================
+        #  MIGRATED: DISPATCH VIA BREVO TRANSACTIONAL SMTP LAYER
+        # ==========================================================================
+        if os.environ.get("BREVO_API_KEY"):
+
+            sender_identity = {"name": "Pomora App", "email": "josephayanwuyi@gmail.com"}
+            
+            recipient_target = [{"email": user.email, "name": user.name}]
+            
+            # Clean HTML template string layout tracking payload
+            html_template = f"""
+                <div style="font-family: sans-serif; background-color: #fcf8f2; padding: 30px; text-align: center;">
+                    <div style="max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid #b87363;">
+                        <h3 style="color: #b87363; margin-top: 0;">Welcome to Pomora, {user.name}! ⏱️</h3>
+                        <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6;">
+                            Please click the secure link below to verify your email address and activate your production dashboard profile:
+                        </p>
+                        <p style="margin: 30px 0;">
+                            <a href="{verification_link}" style="background:#b87363; color:white; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight: bold; display:inline-block;">
+                                Verify My Email
+                            </a>
+                        </p>
                         <br>
-                        <small>If you did not sign up for this account, please ignore this email.</small>
-                    """
-                }
+                        <small style="color: #7a7a7a;">If you did not sign up for this account, please ignore this email.</small>
+                    </div>
+                </div>
+            """
+            
+            # 4. Enforce structural validation parameters via SDK model classes
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=recipient_target,
+                sender=sender_identity,
+                subject="Activate Your Pomora Account",
+                html_content=html_template
             )
             
+            try:
+                # Dispatch payload downstream to Brevo servers
+                mail_api_instance.send_transac_email(send_smtp_email)
+                print(f"Registration email successfully pushed to {user.email}")
+            except ApiException as brevo_err:
+                print(f"Brevo transmission failed internally: {str(brevo_err)}")
+                # Fail gracefully so the database write isn't rolled back due to third-party outages
+        
         return {"status": "success", "message": "Account created! Please check your email inbox to verify."}
+        
+    except Exception as general_err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Signup pipeline failure: {str(general_err)}")
     finally:
         cursor.close()
         conn.close()
+
 
 # --- NEW ENDPOINT: HANDLES THE LINK CLICK ---
 @app.get("/api/verify")
