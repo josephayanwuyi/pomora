@@ -1,22 +1,22 @@
+import os
 import sqlite3
+import datetime
+import smtplib
 import bcrypt
 import jwt
-import datetime
-import os
 import psycopg2
 import requests
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from fastapi import FastAPI, HTTPException, Depends, Request
-from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
+from dotenv import load_dotenv
 
-
-import sib_api_v3_sdk
-from sib_api_v3_sdk.rest import ApiException
-
-
+# --- INITIALIZE CORE APPLICATION CONFIGURATIONS ---
+load_dotenv()
 app = FastAPI(title="Pomora Backend API")
 
 # --- CORS SECURITY POLICY ---
@@ -28,33 +28,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- SECURITY SYSTEM CONFIGURATION ---
+# --- CONFIGURATION CONSTANTS FROM ENV ---
 JWT_SECRET = os.getenv("JWT_SECRET", "a_local_fallback_for_development_only")
 JWT_ALGORITHM = "HS256"
-security_bearer = HTTPBearer()
-
-# --- DATABASE INITIALIZER ---
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500/frontend")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///pomora.db")
+
+# --- PRODUCTION MAIL CONFIGURATION VARIABLES ---
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_SENDER = os.getenv("SMTP_SENDER")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+
+# --- INITIALIZE SECURITY COMPONENT LAYER ---
+security_bearer = HTTPBearer()
 IS_POSTGRES = "postgres" in DATABASE_URL
 
-# --- EMAIL VERIFICATION API ---
-brevo_config = sib_api_v3_sdk.Configuration()
-brevo_config.api_key['api-key'] = os.environ.get("BREVO_API_KEY", "")
-mail_api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(brevo_config))
 
-# frontend URL where users will land to after verification
-FRONTEND_URL = "https://pomora-omega.vercel.app"
+
+#  DATABASE ARCHITECTURE CORE ENGINE
 
 def get_db_connection():
-    # Dynamically routes traffic to cloud Postgres or local SQLite.
+    """Dynamically routes traffic to cloud Postgres or local SQLite."""
     if IS_POSTGRES:
         url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
         return psycopg2.connect(url)
     else:
         return sqlite3.connect("pomora.db")
 
+def get_db_placeholder() -> str:
+    """Returns correct variable placeholder token injection string per dialect."""
+    return "%s" if IS_POSTGRES else "?"
+
 def init_db():
-# Initializes tables using the correct SQL dialect dynamically.
+    """Initializes tables dynamically using the correct SQL dialect syntax."""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -102,32 +109,28 @@ def init_db():
     """)
     
     try:
-        print("Running database schema checks...")
         if IS_POSTGRES:
-            # Safely injects the missing verification column if it isn't tracked yet
-            cursor.execute("""
-                ALTER TABLE users 
-                ADD COLUMN IF NOT EXISTS is_verified INTEGER DEFAULT 0;
-            """)
+            cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified INTEGER DEFAULT 0;")
         else:
-            # Fallback tracking rules for local development sqlite storage instances
             cursor.execute("PRAGMA table_info(users);")
             columns = [col[1] for col in cursor.fetchall()]
             if "is_verified" not in columns:
                 cursor.execute("ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0;")
                 
         conn.commit()
-        print("Database schema is completely up to date.")
+        print("Database schema setup completed successfully.")
     except Exception as migration_error:
-        print(f"Schema status check: {str(migration_error)}")
-        conn.rollback() # Safely discard transaction locks if any state drops
+        print(f"Schema migration checkpoint error skipped: {str(migration_error)}")
+        conn.rollback()
     finally:
         cursor.close()
         conn.close()
 
 init_db()
 
-# --- CRYPTOGRAPHY & TOKEN HELPERS ---
+
+#  CRYPTOGRAPHY, VALIDATION, AND SECURITY TOKENS HELPERS
+
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt(rounds=12)
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
@@ -156,7 +159,8 @@ def verify_jwt_token(credentials: HTTPAuthorizationCredentials = Depends(securit
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid session signature token authorization denied.")
 
-# --- DATA VALIDATION SCHEMAS ---
+
+# --- PYDANTIC VALIDATION MODELS ---
 class UserSignUp(BaseModel):
     name: str
     email: EmailStr
@@ -185,107 +189,154 @@ class AnalyticsLogCreate(BaseModel):
 
 
 
-# --- API ROUTE ENDPOINTS ---
+#  AUTHENTICATION MANAGEMENT GATEWAY ENDPOINTS
 
 @app.post("/api/signup")
 def signup(user: UserSignUp):
     conn = get_db_connection()
     cursor = conn.cursor()
+    p = get_db_placeholder()
     try:
-        cursor.execute("SELECT id FROM users WHERE email = %s", (user.email,))
+        cursor.execute(f"SELECT id FROM users WHERE email = {p}", (user.email,))
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="This email is already registered.")
         
         secure_password = hash_password(user.password)
         
-        # Insert user with is_verified set to 0 (default)
         cursor.execute(
-            "INSERT INTO users (name, email, password, is_verified) VALUES (%s, %s, %s, 0) RETURNING id",
+            f"INSERT INTO users (name, email, password, is_verified) VALUES ({p}, {p}, {p}, 0) RETURNING id" if IS_POSTGRES else
+            f"INSERT INTO users (name, email, password, is_verified) VALUES ({p}, {p}, {p}, 0)",
             (user.name, user.email, secure_password)
         )
-        user_id = cursor.fetchone()[0]
+        user_id = cursor.fetchone()[0] if IS_POSTGRES else cursor.lastrowid
         conn.commit()
         
-        # Generate a simple confirmation token string using their encrypted password hash slice
         verification_token = secure_password[-15:].replace("/", "").replace(".", "")
         verification_link = f"{FRONTEND_URL}/verify.html?email={user.email}&token={verification_token}"
         
-        # ==========================================================================
-        #  MIGRATED: DISPATCH VIA BREVO TRANSACTIONAL SMTP LAYER
-        # ==========================================================================
-        if os.environ.get("BREVO_API_KEY"):
-
-            sender_identity = {"name": "Pomora App", "email": "josephayanwuyi@gmail.com"}
-            
-            recipient_target = [{"email": user.email, "name": user.name}]
-            
-            # Clean HTML template string layout tracking payload
-            html_template = f"""
-                <div style="font-family: sans-serif; background-color: #fcf8f2; padding: 30px; text-align: center;">
-                    <div style="max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid #b87363;">
-                        <h3 style="color: #b87363; margin-top: 0;">Welcome to Pomora, {user.name}! ⏱️</h3>
-                        <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6;">
-                            Please click the secure link below to verify your email address and activate your production dashboard profile:
-                        </p>
-                        <p style="margin: 30px 0;">
-                            <a href="{verification_link}" style="background:#b87363; color:white; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight: bold; display:inline-block;">
-                                Verify My Email
-                            </a>
-                        </p>
-                        <br>
-                        <small style="color: #7a7a7a;">If you did not sign up for this account, please ignore this email.</small>
-                    </div>
+        html_template = f"""
+            <div style="font-family: 'Comic Sans MS', cursive, sans-serif; background-color: #fcf8f2; padding: 30px; text-align: center;">
+                <div style="max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid #b87363; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <h3 style="color: #b87363; margin-top: 0; font-size: 20px;">Welcome to Pomora, {user.name}!</h3>
+                    <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6;">
+                        Please click the secure link below to verify your email address and activate your production dashboard profile:
+                    </p>
+                    <p style="margin: 30px 0;">
+                        <a href="{verification_link}" style="background:#b87363; color:white; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight: bold; display:inline-block;">
+                            Verify My Email
+                        </a>
+                    </p>
+                    <br>
+                    <small style="color: #7a7a7a;">If you did not sign up for this account, please ignore this email.</small>
                 </div>
-            """
-            
-            # 4. Enforce structural validation parameters via SDK model classes
-            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-                to=recipient_target,
-                sender=sender_identity,
-                subject="Activate Your Pomora Account",
-                html_content=html_template
-            )
-            
-            try:
-                # Dispatch payload downstream to Brevo servers
-                mail_api_instance.send_transac_email(send_smtp_email)
-                print(f"Registration email successfully pushed to {user.email}")
-            except ApiException as brevo_err:
-                print(f"Brevo transmission failed internally: {str(brevo_err)}")
-                # Fail gracefully so the database write isn't rolled back due to third-party outages
+            </div>
+        """
         
-        return {"status": "success", "message": "Account created! Please check your email inbox to verify."}
+        # --- NATIVE GOOGLE SMTP SENDER TRANSMISSION LAYER ---
+        if SMTP_SENDER and SMTP_PASSWORD:
+            try:
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = "Activate Your Pomora Account"
+                msg["From"] = f"Pomora App <{SMTP_SENDER}>"
+                msg["To"] = user.email
+                msg.attach(MIMEText(html_template, "html"))
+                
+                server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+                server.starttls()
+                server.login(SMTP_SENDER, SMTP_PASSWORD)
+                server.sendmail(SMTP_SENDER, user.email, msg.as_string())
+                server.quit()
+                print(f"Verification email sent via native Google SMTP gateway to {user.email}")
+            except Exception as mail_err:
+                print(f"Production SMTP pipeline activation failure trace: {str(mail_err)}")
+                
+        return {"status": "success", "message": "Account created. Please check your email inbox or spam to verify."}
         
     except Exception as general_err:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Signup pipeline failure: {str(general_err)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(general_err)}")
     finally:
         cursor.close()
         conn.close()
 
 
-# --- NEW ENDPOINT: HANDLES THE LINK CLICK ---
+
 @app.get("/api/verify")
-def verify_email(email: str, token: str):
+def verify_account(email: str, token: str):
     conn = get_db_connection()
     cursor = conn.cursor()
+    p = get_db_placeholder()
     try:
-        cursor.execute("SELECT password, is_verified FROM users WHERE email = %s", (email,))
-        record = cursor.fetchone()
+        # 1. Fetch user records to validate token sequences and grab the registered name
+        cursor.execute(f"SELECT id, name, password, is_verified FROM users WHERE email = {p}", (email,))
+        user_record = cursor.fetchone()
         
-        if not record:
-            raise HTTPException(status_code=404, detail="User account records not found.")
+        if not user_record:
+            raise HTTPException(status_code=404, detail="Account profile not found.")
             
-        stored_hash, is_verified = record
-        expected_token = stored_hash[-15:].replace("/", "").replace(".", "")
+        user_id, user_name, secure_password, is_verified = user_record
         
+        if is_verified == 1:
+            return {"status": "success", "message": "Account already active. Log in to continue."}
+            
+        expected_token = secure_password[-15:].replace("/", "").replace(".", "")
         if token != expected_token:
-            raise HTTPException(status_code=400, detail="Invalid or expired verification session signature.")
+            raise HTTPException(status_code=400, detail="Invalid or expired verification token parameters.")
             
-        # Flip the bits to active status 1
-        cursor.execute("UPDATE users SET is_verified = 1 WHERE email = %s", (email,))
+        # 2. Activate user record in the database
+        cursor.execute(f"UPDATE users SET is_verified = 1 WHERE id = {p}", (user_id,))
         conn.commit()
-        return {"status": "success", "message": "Account verified successfully!"}
+        
+        #  FOUNDER'S DUAL WELCOME MAIL SYSTEM (NATIVE SMTP)
+        if SMTP_SENDER and SMTP_PASSWORD:
+            # We inject user_name directly so the email is completely personalized!
+            walkthrough_html = f"""
+                <div style="font-family: 'Comic Sans MS', cursive, sans-serif; background-color: #fcf8f2; padding: 40px 15px; color: #4a4a4a;">
+                    <div style="max-width: 550px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid rgba(184, 115, 99, 0.15); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+                        <h3 style="color: #b87363; margin-top: 0; font-size: 22px;">Hey {user_name}, welcome to Pomora!</h3>
+                        <p style="font-size: 15px; line-height: 1.6;">
+                            Your account is officially active! I built Pomora because as a student, managing deep work focus blocks while trying to balance an elite academic performance is incredibly demanding. This app is designed to streamline your daily tasks and automate your workflow intervals so you can hit your highest targets efficiently.
+                        </p>
+                        <h4 style="color: #333333; margin-bottom: 8px; font-size: 16px;">Quick Walkthrough to Get Started:</h4>
+                        <ul style="padding-left: 20px; font-size: 14px; line-height: 1.6; margin-top: 0;">
+                            <li style="margin-bottom: 8px;"><strong>Organize Your Sprint:</strong> Head to your task manager card right below the clock and list out your immediate assignments or features.</li>
+                            <li style="margin-bottom: 8px;"><strong>The 25-Minute Rule:</strong> Hit the start button. Avoid switching tabs or picking up distractions until the digital alarm buzzer signals your break.</li>
+                            <li style="margin-bottom: 8px;"><strong>Seamless Syncing:</strong> Since your account is verified, you can log in from your laptop, phone, or tablet and your tasks will always be securely tracked in real time.</li>
+                        </ul>
+                        <p style="font-size: 15px; line-height: 1.6;"> Put in the work, trust your focus routines, and let's go make that 5.0 GPA goal an absolute reality. </p>
+                        <div style="margin: 35px 0 20px 0; border-top: 1px solid #eeeeee; padding-top: 20px;">
+                            <p style="margin: 0; font-weight: bold; color: #333333; font-size: 15px;">With ❤️ Joseph Ayanwuyi, </p>
+                            <p style="margin: 4px 0 0 0; color: #7a7a7a; font-size: 13px;">Creative Director & Founder, Pomora</p>
+                        </div>
+                    </div>
+                </div>
+            """
+            try:
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = "Welcome to Pomora! (Quick App Walkthrough)"
+                msg["From"] = f"Joseph (Founder, Pomora) <{SMTP_SENDER}>"
+                msg["To"] = email
+                msg.attach(MIMEText(walkthrough_html, "html"))
+                
+                server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+                server.starttls()
+                server.login(SMTP_SENDER, SMTP_PASSWORD)
+                server.sendmail(SMTP_SENDER, email, msg.as_string())
+                server.quit()
+                print(f"Onboarding walkthrough email dispatched successfully to {email}")
+            except Exception as walkthrough_err:
+                print(f"System bypassed onboarding email dispatch failure: {str(walkthrough_err)}")
+                
+        # Send a 200 OK back along with the name so the frontend verify.html can use it too!
+        return {
+            "status": "success", 
+            "message": "Account verified successfully.", 
+            "user_name": user_name
+        }
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         conn.close()
@@ -294,11 +345,12 @@ def verify_email(email: str, token: str):
 def signin(credentials: UserSignIn):
     conn = get_db_connection()
     cursor = conn.cursor()
+    p = get_db_placeholder()
     
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT id, name, email, password, is_verified, pomo_time, short_time, long_time, 
                long_interval, auto_break, auto_pomo, selected_sound 
-        FROM users WHERE email = %s
+        FROM users WHERE email = {p}
     """, (credentials.email,))
     
     user_record = cursor.fetchone()
@@ -308,13 +360,11 @@ def signin(credentials: UserSignIn):
     if not user_record:
         raise HTTPException(status_code=401, detail="Invalid email address or password.")
         
-    # FIXED: Added 'is_verified' right after stored_hash to match the exact 12-column SQL order
     user_id, name, email, stored_hash, is_verified, pomo, short, long_b, interval, auto_b, auto_p, sound = user_record
     
     if not verify_password(credentials.password, stored_hash):
         raise HTTPException(status_code=401, detail="Invalid email address or password.")
     
-    # FIXED: Using the correctly unpacked 'is_verified' variable to block unactivated links
     if not is_verified:
         raise HTTPException(status_code=403, detail="Please verify your email address before logging in.")
 
@@ -336,27 +386,32 @@ def signin(credentials: UserSignIn):
             }
         }
     }
-# --- SECURED ENDPOINTS ---
+
+
+#  SECURED APPLICATION RESOURCE ENDPOINTS (JWT ENFORCED)
 
 @app.get("/api/tasks")
 def get_tasks(token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
-    conn = get_db_connection()  # FIXED
+    conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, text, completed FROM tasks WHERE user_id = %s", (user_id,))
+    p = get_db_placeholder()
+    cursor.execute(f"SELECT id, text, completed FROM tasks WHERE user_id = {p}", (user_id,))
     records = cursor.fetchall()
     cursor.close()
     conn.close()
     return [{"id": r[0], "text": r[1], "completed": bool(r[2])} for r in records]
+
 
 @app.post("/api/tasks")
 def add_task(task: TaskCreate, token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
     conn = get_db_connection()
     cursor = conn.cursor()
+    p = get_db_placeholder()
     try:
         cursor.execute(
-            "INSERT INTO tasks (id, user_id, text, completed) VALUES (%s, %s, %s, 0)",
+            f"INSERT INTO tasks (id, user_id, text, completed) VALUES ({p}, {p}, {p}, 0)",
             (task.id, user_id, task.text)
         )
         conn.commit()
@@ -365,12 +420,14 @@ def add_task(task: TaskCreate, token_data: dict = Depends(verify_jwt_token)):
         cursor.close()
         conn.close()
 
+
 @app.delete("/api/tasks/{task_id}")
 def delete_task_backend(task_id: str, token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
+    p = get_db_placeholder()
+    cursor.execute(f"DELETE FROM tasks WHERE id = {p} AND user_id = {p}", (task_id, user_id))
     conn.commit()
     cursor.close()
     conn.close()
@@ -382,31 +439,34 @@ def toggle_task_backend(task_id: str, token_data: dict = Depends(verify_jwt_toke
     user_id = token_data["user_id"]
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT completed FROM tasks WHERE id = %s AND user_id = %s", (task_id, user_id))
+    p = get_db_placeholder()
+    cursor.execute(f"SELECT completed FROM tasks WHERE id = {p} AND user_id = {p}", (task_id, user_id))
     record = cursor.fetchone()
     if record:
         new_status = 0 if record[0] == 1 else 1
-        cursor.execute("UPDATE tasks SET completed = %s WHERE id = %s AND user_id = %s", (new_status, task_id, user_id))
+        cursor.execute(f"UPDATE tasks SET completed = {p} WHERE id = {p} AND user_id = {p}", (new_status, task_id, user_id))
         conn.commit()
     cursor.close()
     conn.close()
     return {"status": "success"}
+
 
 @app.post("/api/settings/save")
 def save_user_settings(data: SettingsUpdate, token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
     conn = get_db_connection()
     cursor = conn.cursor()
+    p = get_db_placeholder()
     
     auto_break_int = 1 if data.auto_break else 0
     auto_pomo_int = 1 if data.auto_pomo else 0
     
     try:
-        cursor.execute("""
+        cursor.execute(f"""
             UPDATE users SET 
-                pomo_time = %s, short_time = %s, long_time = %s, 
-                long_interval = %s, auto_break = %s, auto_pomo = %s, selected_sound = %s
-            WHERE id = %s
+                pomo_time = {p}, short_time = {p}, long_time = {p}, 
+                long_interval = {p}, auto_break = {p}, auto_pomo = {p}, selected_sound = {p}
+            WHERE id = {p}
         """, (data.pomo_time, data.short_time, data.long_time, data.long_interval, 
               auto_break_int, auto_pomo_int, data.selected_sound, user_id))
         conn.commit()
@@ -423,10 +483,11 @@ def log_focus_session(data: AnalyticsLogCreate, token_data: dict = Depends(verif
     user_id = token_data["user_id"]
     conn = get_db_connection()
     cursor = conn.cursor()
+    p = get_db_placeholder()
     try:
-        cursor.execute("""
+        cursor.execute(f"""
             INSERT INTO analytics_logs (user_id, task_text, duration_minutes)
-            VALUES (%s, %s, %s)
+            VALUES ({p}, {p}, {p})
         """, (user_id, data.task_text, data.duration_minutes))
         conn.commit()
         return {"status": "success", "message": "Focus interval logged successfully."}
@@ -436,13 +497,14 @@ def log_focus_session(data: AnalyticsLogCreate, token_data: dict = Depends(verif
         cursor.close()
         conn.close()
 
+
 @app.get("/api/analytics/dashboard")
 def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depends(verify_jwt_token)):
     user_id = token_data["user_id"]
-    conn = get_db_connection()  # FIXED
+    conn = get_db_connection()
     cursor = conn.cursor()
+    p = get_db_placeholder()
     
-    # FIXED: Handled the structural date filter math differences between SQLite and Postgres
     if IS_POSTGRES:
         if range_type == "7days": date_filter = "CURRENT_DATE - INTERVAL '7 days'"
         elif range_type == "30days": date_filter = "CURRENT_DATE - INTERVAL '30 days'"
@@ -452,13 +514,13 @@ def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depend
         query_trend = f"""
             SELECT timestamp::date as focus_date, SUM(duration_minutes) 
             FROM analytics_logs 
-            WHERE user_id = %s AND timestamp >= {date_filter}
+            WHERE user_id = {p} AND timestamp >= {date_filter}
             GROUP BY focus_date ORDER BY focus_date ASC
         """
         query_tasks = f"""
             SELECT task_text, COUNT(*) as cycles 
             FROM analytics_logs 
-            WHERE user_id = %s AND timestamp >= {date_filter}
+            WHERE user_id = {p} AND timestamp >= {date_filter}
             GROUP BY task_text ORDER BY cycles DESC LIMIT 5
         """
     else:
@@ -470,13 +532,13 @@ def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depend
         query_trend = f"""
             SELECT date(timestamp) as focus_date, SUM(duration_minutes) 
             FROM analytics_logs 
-            WHERE user_id = %s AND date(timestamp) >= {date_filter}
+            WHERE user_id = {p} AND date(timestamp) >= {date_filter}
             GROUP BY focus_date ORDER BY focus_date ASC
         """
         query_tasks = f"""
             SELECT task_text, COUNT(*) as cycles 
             FROM analytics_logs 
-            WHERE user_id = %s AND date(timestamp) >= {date_filter}
+            WHERE user_id = {p} AND date(timestamp) >= {date_filter}
             GROUP BY task_text ORDER BY cycles DESC LIMIT 5
         """
 
@@ -486,7 +548,7 @@ def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depend
     cursor.execute(query_tasks, (user_id,))
     top_tasks = [{"task": r[0], "cycles": r[1]} for r in cursor.fetchall()]
 
-    cursor.execute("SELECT SUM(duration_minutes) FROM analytics_logs WHERE user_id = %s", (user_id,))
+    cursor.execute(f"SELECT SUM(duration_minutes) FROM analytics_logs WHERE user_id = {p}", (user_id,))
     total_lifetime_mins = cursor.fetchone()[0] or 0
 
     cursor.close()
@@ -502,24 +564,20 @@ def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depend
         }
     }
 
-# --- PUBLIC HEALTH ENDPOINT ---
 
+
+#  PUBLIC CORE HEALTH MONITORING ENDPOINT
 @app.api_route("/api/health", methods=["GET", "HEAD"])
 def database_and_server_health_check(request: Request):
-    """
-    Public diagnostic health checkpoint for uptime monitoring tools.
-    Bypasses JWT authentication gates to verify application runtime stability.
-    """
+    """Public diagnostic health checkpoint for Render uptime monitors."""
     try:
-        # 1. Test database pool to make sure connection rows aren't stalled
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT 1;") # Fast lightweight execution query
+        cursor.execute("SELECT 1;")
         cursor.fetchone()
         cursor.close()
         conn.close()
         
-        # 2. Return a 200 OK status verification payload structure
         return {
             "status": "healthy",
             "environment": "production",
@@ -527,7 +585,6 @@ def database_and_server_health_check(request: Request):
             "message": "Pomora core engine is operational."
         }
     except Exception as database_error:
-        # If the database goes down or hits connection limits, return a 500 Server Error
         raise HTTPException(
             status_code=500, 
             detail=f"Core system degradation detected: {str(database_error)}"

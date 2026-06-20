@@ -5,79 +5,256 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Verification | Pomora</title>
-    <link rel="stylesheet" href="css/styles.css">
     <style>
+        #body {
+            background: #fdf6f6;
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont,
+                'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
+                'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol' !important; 
+            margin: 0;
+        }
+
         .verify-box {
-            max-width: 450px;
+            max-width: 480px;
             margin: 100px auto;
             padding: 40px;
             text-align: center;
             background: white;
-            border-radius: 12px;
+            border-radius: 16px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
         }
 
         .verify-box h2 {
             color: #a94242;
+            margin-top: 0;
             margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .verify-box p {
+            color: #555555;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 25px;
         }
 
         .verify-btn {
             display: inline-block;
-            margin-top: 20px;
             background: #c15b5b;
             color: white;
-            padding: 12px 24px;
+            padding: 14px 28px;
             text-decoration: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: bold;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 15px;
+            transition: background 0.2s ease;
+        }
+
+        .verify-btn:hover {
+            background: #a94242;
+        }
+
+        /* Interactive Steps Indicator Dots */
+        .steps-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 25px;
+        }
+
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            background: rgba(193, 91, 91, 0.2);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .step-dot.active {
+            background: #c15b5b;
+            width: 24px;
+            border-radius: 10px;
+        }
+
+        /* Loading Spinner Animation */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(193, 91, 91, 0.1);
+            border-top: 4px solid #c15b5b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Utility Hidden Class */
+        .hidden {
+            display: none !important;
         }
     </style>
-    <!-- <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/apple-touch-icon.png"> -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
     <link rel="icon" type="image/png" sizes="50x50" href="./assets/img/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="./assets/img/favicon-16x16.png">
     <link rel="manifest" href="./assets/img/site.webmanifest">
 </head>
 
-<body style="background: #fdf6f6; font-family: sans-serif;">
+<body id="body">
+
+
+
     <div class="verify-box">
-        <h2 id="statusTitle">Verifying Your Profile...</h2>
-        <p id="statusMessage">Communicating with the security layer streams to activate your token...</p>
-        <a href="index.html" id="actionBtn" class="verify-btn" style="display: none;">Proceed to Sign In</a>
+        <div id="loadingPanel">
+            <h2 id="statusTitle">Verifying Your Profile...</h2>
+            <div class="spinner"></div>
+            <p id="statusMessage">Communicating with the security layer streams to activate your token...</p>
+        </div>
+
+        <div id="walkthroughPanel" class="hidden">
+            <div id="slideContent">
+            </div>
+
+            <div class="steps-indicator">
+                <div class="step-dot active" id="dot-0"></div>
+                <div class="step-dot" id="dot-1"></div>
+                <div class="step-dot" id="dot-2"></div>
+            </div>
+
+            <button id="actionBtn" class="verify-btn" onclick="nextSlide()">Next Step →</button>
+        </div>
     </div>
 
     <script>
+        // Extract parameters cleanly from url query string
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get("email");
+        const token = urlParams.get("token");
+
+        // Unified environment routing manager
+        const IS_PRODUCTION = window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost";
+        const BACKEND_URL = IS_PRODUCTION ? "https://pomora-backend-api.onrender.com" : "http://127.0.0.1:8000";
+
+        let currentSlideIndex = 0;
+
+        // Structured step deck configuration matrices
+        const slides = [
+            {
+                title: "Welcome to Pomora!",
+                text: "Your email is verified and your account is officially active. I built Pomora because as a student, managing deep work focus blocks while trying to balance an elite academic performance is demanding. This app will streamline your execution."
+            },
+            {
+                title: "Step 1: Set Your Intervals",
+                text: "Your workspace defaults to a classic 25-minute Pomodoro focus block. Pop open your dashboard card configurations to customize your session timings, short breaks, and long intervals to match your mental energy curve."
+            },
+            {
+                title: "Step 2: Log and Attack Tasks",
+                text: "List out your immediate engineering goals or course assignments directly below the clock. Hit start, close distractions, protect your immediate time window, and let's go make that 5.0 GPA goal an absolute reality!"
+            }
+        ];
+
         document.addEventListener("DOMContentLoaded", async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const email = urlParams.get("email");
-            const token = urlParams.get("token");
-
-            // Single production routing url helper destination
-            const BACKEND_URL = "https://pomora-backend-api.onrender.com";
-
             if (!email || !token) {
-                document.getElementById("statusTitle").textContent = "Invalid Request";
-                document.getElementById("statusMessage").textContent = "Missing secure pipeline parameters.";
+                showFailureState("Invalid Request", "Missing secure verification signature token parameters.");
                 return;
             }
 
             try {
-                const response = await fetch(`${BACKEND_URL}/api/verify?email=${email}&token=${token}`);
+                // Call verification service hook on backend
+                const response = await fetch(`${BACKEND_URL}/api/verify?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`);
                 const data = await response.json();
 
                 if (response.ok) {
-                    document.getElementById("statusTitle").textContent = "Account Activated! 🎉";
-                    document.getElementById("statusMessage").textContent = "Your email has been verified. You can now log into Pomora smoothly.";
-                    document.getElementById("actionBtn").style.display = "inline-block";
+                    // Personalize slide context using the backend database name response string
+                    if (data.user_name) {
+                        slides[0].title = `Welcome to Pomora, ${data.user_name}!`;
+                    }
+
+                    // Switch interface views smoothly
+                    document.getElementById("loadingPanel").classList.add("hidden");
+                    document.getElementById("walkthroughPanel").classList.remove("hidden");
+                    renderSlide();
                 } else {
-                    document.getElementById("statusTitle").textContent = "Verification Failed";
-                    document.getElementById("statusMessage").textContent = data.detail || "The link is broken or expired.";
+                    showFailureState("Verification Failed", data.detail || "The verification token signature is invalid or expired.");
                 }
             } catch (error) {
-                document.getElementById("statusTitle").textContent = "Network Error";
-                document.getElementById("statusMessage").textContent = "Could not reach the security cluster server.";
+                showFailureState("Network Error", "Could not establish secure communication with the security cluster.");
             }
         });
+
+        function renderSlide() {
+            const currentSlide = slides[currentSlideIndex];
+            const contentContainer = document.getElementById("slideContent");
+
+            contentContainer.innerHTML = `
+                <h2>${currentSlide.title}</h2>
+                <p>${currentSlide.text}</p>
+            `;
+
+            // Update interactive indicator dots classes
+            for (let i = 0; i < slides.length; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                if (dot) {
+                    if (i === currentSlideIndex) {
+                        dot.classList.add("active");
+                    } else {
+                        dot.classList.remove("active");
+                    }
+                }
+            }
+
+            // Morph operational action button value on final array slide index
+            const actionBtn = document.getElementById("actionBtn");
+            if (currentSlideIndex === slides.length - 1) {
+                actionBtn.innerText = "Enter My Workspace ⚡";
+            } else {
+                actionBtn.innerText = "Next Step →";
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlideIndex < slides.length - 1) {
+                currentSlideIndex++;
+                renderSlide();
+            } else {
+                // Transfer user directly into authentication terminal page
+                window.location.href = "index.html?verified=true";
+            }
+        }
+
+        function showFailureState(title, message) {
+            // Re-utilize the initial loading panel to print out elegant semantic crash logs
+            document.getElementById("loadingPanel").classList.remove("hidden");
+            document.getElementById("walkthroughPanel").classList.add("hidden");
+
+            // Remove the loading spinner on error state profiles
+            const spinner = document.querySelector(".spinner");
+            if (spinner) spinner.remove();
+
+            const statusTitle = document.getElementById("statusTitle");
+            document.getElementById("statusTitle").textContent = title;
+            statusTitle.style.display = "flex";
+            statusTitle.style.justifyContent = "center";
+            statusTitle.style.alignItems = "center";
+            document.getElementById("statusMessage").textContent = message;
+        }
     </script>
 </body>
 

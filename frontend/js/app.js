@@ -5,7 +5,11 @@ const IS_PRODUCTION =
 
 const BACKEND_URL = "https://pomora-backend-api.onrender.com";
 
-const API_BASE_URL = IS_PRODUCTION ? BACKEND_URL : "${API_BASE_URL}";
+const LOCAL_URL = "http://127.0.0.1:8000"; // Explicitly defined local development port
+
+// Evaluates perfectly without broken string literals or infinite self-references
+const API_BASE_URL = IS_PRODUCTION ? BACKEND_URL : LOCAL_URL;
+
 
 // Pomora - Master Productivity Application Architecture Engine
 
