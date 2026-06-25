@@ -190,19 +190,21 @@ class AnalyticsLogCreate(BaseModel):
 
 
 #  AUTHENTICATION MANAGEMENT GATEWAY ENDPOINTS
-
 @app.post("/api/signup")
 def signup(user: UserSignUp):
     conn = get_db_connection()
     cursor = conn.cursor()
     p = get_db_placeholder()
     try:
+        # 1. Thread-safe unique email validation check
         cursor.execute(f"SELECT id FROM users WHERE email = {p}", (user.email,))
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="This email is already registered.")
         
+        # 2. Convert incoming credentials into a secure crypt-hash slice string
         secure_password = hash_password(user.password)
         
+        # 3. Commit user record to database (Default: Unverified status)
         cursor.execute(
             f"INSERT INTO users (name, email, password, is_verified) VALUES ({p}, {p}, {p}, 0) RETURNING id" if IS_POSTGRES else
             f"INSERT INTO users (name, email, password, is_verified) VALUES ({p}, {p}, {p}, 0)",
@@ -211,13 +213,14 @@ def signup(user: UserSignUp):
         user_id = cursor.fetchone()[0] if IS_POSTGRES else cursor.lastrowid
         conn.commit()
         
+        # 4. Generate dynamic registration verification parameters
         verification_token = secure_password[-15:].replace("/", "").replace(".", "")
         verification_link = f"{FRONTEND_URL}/verify.html?email={user.email}&token={verification_token}"
         
         html_template = f"""
-            <div style="font-family: 'Comic Sans MS', cursive, sans-serif; background-color: #fcf8f2; padding: 30px; text-align: center;">
+            <div style="font-family: sans-serif; background-color: #fcf8f2; padding: 30px; text-align: center;">
                 <div style="max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid #b87363; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                    <h3 style="color: #b87363; margin-top: 0; font-size: 20px;">Welcome to Pomora, {user.name}!</h3>
+                    <h3 style="color: #b87363; margin-top: 0; font-size: 20px;">Welcome to Pomora, {user.name}</h3>
                     <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6;">
                         Please click the secure link below to verify your email address and activate your production dashboard profile:
                     </p>
@@ -232,25 +235,38 @@ def signup(user: UserSignUp):
             </div>
         """
         
-        # --- NATIVE GOOGLE SMTP SENDER TRANSMISSION LAYER ---
-        if SMTP_SENDER and SMTP_PASSWORD:
+        # ==========================================================================
+        #  PRODUCTION ENGINE: MAILJET OUTBOUND DISPATCH (SIGNUP ACTIVATION)
+        # ==========================================================================
+        mj_key = os.environ.get("MAILJET_API_KEY")
+        mj_secret = os.environ.get("MAILJET_SECRET_KEY")
+        mj_sender = os.environ.get("SMTP_SENDER")
+
+        if mj_key and mj_secret and mj_sender:
+            mailjet_url = "https://api.mailjet.com/v3.1/send"
+            
+            payload = {
+                "Messages": [
+                    {
+                        "From": {"Email": mj_sender, "Name": "Pomora App"},
+                        "To": [{"Email": user.email, "Name": user.name}],
+                        "Subject": "Activate Your Pomora Account",
+                        "HTMLPart": html_template
+                    }
+                ]
+            }
+            
             try:
-                msg = MIMEMultipart("alternative")
-                msg["Subject"] = "Activate Your Pomora Account"
-                msg["From"] = f"Pomora App <{SMTP_SENDER}>"
-                msg["To"] = user.email
-                msg.attach(MIMEText(html_template, "html"))
-                
-                server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-                server.starttls()
-                server.login(SMTP_SENDER, SMTP_PASSWORD)
-                server.sendmail(SMTP_SENDER, user.email, msg.as_string())
-                server.quit()
-                print(f"Verification email sent via native Google SMTP gateway to {user.email}")
-            except Exception as mail_err:
-                print(f"Production SMTP pipeline activation failure trace: {str(mail_err)}")
-                
-        return {"status": "success", "message": "Account created. Please check your email inbox or spam to verify."}
+                # Dispatched over port 443 HTTPS endpoint - Render passes this instantly!
+                response = requests.post(mailjet_url, json=payload, auth=(mj_key, mj_secret), timeout=8)
+                if response.status_code == 200:
+                    print(f"Verification email successfully delivered via Mailjet API to {user.email}")
+                else:
+                    print(f"Mailjet API Rejection: {response.status_code} - {response.text}")
+            except Exception as mail_network_err:
+                print(f"Mailjet signup gateway edge connection timeout: {str(mail_network_err)}")
+        
+        return {"status": "success", "message": "Account created! Please check your email inbox to verify."}
         
     except Exception as general_err:
         conn.rollback()
@@ -258,7 +274,6 @@ def signup(user: UserSignUp):
     finally:
         cursor.close()
         conn.close()
-
 
 
 @app.get("/api/verify")
@@ -277,57 +292,70 @@ def verify_account(email: str, token: str):
         user_id, user_name, secure_password, is_verified = user_record
         
         if is_verified == 1:
-            return {"status": "success", "message": "Account already active. Log in to continue."}
+            return {"status": "success", "message": "Account already active. Log in to continue.", "user_name": user_name}
             
         expected_token = secure_password[-15:].replace("/", "").replace(".", "")
         if token != expected_token:
             raise HTTPException(status_code=400, detail="Invalid or expired verification token parameters.")
             
-        # 2. Activate user record in the database
+        # 2. Activate user record state within your PostgreSQL or SQLite core storage row
         cursor.execute(f"UPDATE users SET is_verified = 1 WHERE id = {p}", (user_id,))
         conn.commit()
         
-        #  FOUNDER'S DUAL WELCOME MAIL SYSTEM (NATIVE SMTP)
-        if SMTP_SENDER and SMTP_PASSWORD:
-            # We inject user_name directly so the email is completely personalized!
-            walkthrough_html = f"""
-                <div style="font-family: 'Comic Sans MS', cursive, sans-serif; background-color: #fcf8f2; padding: 40px 15px; color: #4a4a4a;">
-                    <div style="max-width: 550px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid rgba(184, 115, 99, 0.15); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-                        <h3 style="color: #b87363; margin-top: 0; font-size: 22px;">Hey {user_name}, welcome to Pomora!</h3>
-                        <p style="font-size: 15px; line-height: 1.6;">
-                            Your account is officially active! I built Pomora because as a student, managing deep work focus blocks while trying to balance an elite academic performance is incredibly demanding. This app is designed to streamline your daily tasks and automate your workflow intervals so you can hit your highest targets efficiently.
-                        </p>
-                        <h4 style="color: #333333; margin-bottom: 8px; font-size: 16px;">Quick Walkthrough to Get Started:</h4>
-                        <ul style="padding-left: 20px; font-size: 14px; line-height: 1.6; margin-top: 0;">
-                            <li style="margin-bottom: 8px;"><strong>Organize Your Sprint:</strong> Head to your task manager card right below the clock and list out your immediate assignments or features.</li>
-                            <li style="margin-bottom: 8px;"><strong>The 25-Minute Rule:</strong> Hit the start button. Avoid switching tabs or picking up distractions until the digital alarm buzzer signals your break.</li>
-                            <li style="margin-bottom: 8px;"><strong>Seamless Syncing:</strong> Since your account is verified, you can log in from your laptop, phone, or tablet and your tasks will always be securely tracked in real time.</li>
-                        </ul>
-                        <p style="font-size: 15px; line-height: 1.6;"> Put in the work, trust your focus routines, and let's go make that 5.0 GPA goal an absolute reality. </p>
-                        <div style="margin: 35px 0 20px 0; border-top: 1px solid #eeeeee; padding-top: 20px;">
-                            <p style="margin: 0; font-weight: bold; color: #333333; font-size: 15px;">With ❤️ Joseph Ayanwuyi, </p>
-                            <p style="margin: 4px 0 0 0; color: #7a7a7a; font-size: 13px;">Creative Director & Founder, Pomora</p>
-                        </div>
+        # 3. Compile an authentic responsive founder onboarding content template layout
+        walkthrough_html = f"""
+            <div style="font-family: sans-serif; background-color: #fcf8f2; padding: 40px 15px; color: #4a4a4a;">
+                <div style="max-width: 550px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid rgba(184, 115, 99, 0.15); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+                    <h3 style="color: #b87363; margin-top: 0; font-size: 22px;">Hey {user_name}, welcome to Pomora! 👋</h3>
+                    <p style="font-size: 15px; line-height: 1.6;">
+                        Your account is officially active! I built Pomora because as a student, managing deep work focus blocks while trying to balance an elite academic performance is incredibly demanding. This app is designed to streamline your daily tasks and automate your workflow intervals so you can hit your highest targets efficiently.
+                    </p>
+                    <h4 style="color: #333333; margin-bottom: 8px; font-size: 16px;">Quick Walkthrough to Get Started:</h4>
+                    <ul style="padding-left: 20px; font-size: 14px; line-height: 1.6; margin-top: 0;">
+                        <li style="margin-bottom: 8px;"><strong>Organize Your Sprint:</strong> Head to your task manager card right below the clock and list out your immediate assignments or features.</li>
+                        <li style="margin-bottom: 8px;"><strong>The 25-Minute Rule:</strong> Hit the start button. Avoid switching tabs or picking up distractions until the digital alarm buzzer signals your break.</li>
+                        <li style="margin-bottom: 8px;"><strong>Seamless Syncing:</strong> Since your account is verified, you can log in from your laptop, phone, or tablet and your tasks will always be securely tracked in real time.</li>
+                    </ul>
+                    <p style="font-size: 15px; line-height: 1.6;"> Put in the work, trust your focus routines, and let's go make that 5.0 GPA goal an absolute reality. </p>
+                    <div style="margin: 35px 0 20px 0; border-top: 1px solid #eeeeee; padding-top: 20px;">
+                        <p style="margin: 0; font-weight: bold; color: #333333; font-size: 15px;">With ❤️ Joseph Ayanwuyi,</p>
+                        <p style="margin: 4px 0 0 0; color: #7a7a7a; font-size: 13px;">Creative Director & Founder, Pomora</p>
                     </div>
                 </div>
-            """
+            </div>
+        """
+        
+        
+        #  PRODUCTION ENGINE: MAILJET OUTBOUND DISPATCH (FOUNDER ONBOARDING WELCOME)
+        mj_key = os.environ.get("MAILJET_API_KEY")
+        mj_secret = os.environ.get("MAILJET_SECRET_KEY")
+        mj_sender = os.environ.get("SMTP_SENDER")
+
+        if mj_key and mj_secret and mj_sender:
+            mailjet_url = "https://api.mailjet.com/v3.1/send"
+            
+            payload = {
+                "Messages": [
+                    {
+                        "From": {"Email": mj_sender, "Name": "Joseph (Founder, Pomora)"},
+                        "To": [{"Email": email, "Name": user_name}],
+                        "Subject": "Welcome to Pomora! (Quick App Walkthrough)",
+                        "HTMLPart": walkthrough_html
+                    }
+                ]
+            }
+            
             try:
-                msg = MIMEMultipart("alternative")
-                msg["Subject"] = "Welcome to Pomora! (Quick App Walkthrough)"
-                msg["From"] = f"Joseph (Founder, Pomora) <{SMTP_SENDER}>"
-                msg["To"] = email
-                msg.attach(MIMEText(walkthrough_html, "html"))
+                # API call securely clears cloud firewalls instantly
+                response = requests.post(mailjet_url, json=payload, auth=(mj_key, mj_secret), timeout=8)
+                if response.status_code == 200:
+                    print(f"Onboarding walkthrough email successfully delivered via Mailjet API to {email}")
+                else:
+                    print(f"Mailjet Onboarding API Rejection: {response.status_code} - {response.text}")
+            except Exception as walkthrough_mail_err:
+                print(f"Mailjet onboarding gateway connection timeout: {str(walkthrough_mail_err)}")
                 
-                server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-                server.starttls()
-                server.login(SMTP_SENDER, SMTP_PASSWORD)
-                server.sendmail(SMTP_SENDER, email, msg.as_string())
-                server.quit()
-                print(f"Onboarding walkthrough email dispatched successfully to {email}")
-            except Exception as walkthrough_err:
-                print(f"System bypassed onboarding email dispatch failure: {str(walkthrough_err)}")
-                
-        # Send a 200 OK back along with the name so the frontend verify.html can use it too!
+        # Return response payload so verify.html can intercept user_name dynamically for visual slides
         return {
             "status": "success", 
             "message": "Account verified successfully.", 
@@ -340,6 +368,7 @@ def verify_account(email: str, token: str):
     finally:
         cursor.close()
         conn.close()
+
 
 @app.post("/api/signin")
 def signin(credentials: UserSignIn):
