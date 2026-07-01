@@ -10,7 +10,7 @@
             background: #fdf6f6;
             font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont,
                 'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
-                'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol' !important; 
+                'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol' !important;
             margin: 0;
         }
 
@@ -115,6 +115,16 @@
     <link rel="icon" type="image/png" sizes="50x50" href="./assets/img/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="./assets/img/favicon-16x16.png">
     <link rel="manifest" href="./assets/img/site.webmanifest">
+
+    <!-- Google Analytics to track user -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3CQ55Y52CE"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-3CQ55Y52CE');
+    </script>
 </head>
 
 <body id="body">
@@ -166,7 +176,7 @@
             },
             {
                 title: "Step 2: Log and Attack Tasks",
-                text: "List out your immediate engineering goals or course assignments directly below the clock. Hit start, close distractions, protect your immediate time window, and let's go make that 5.0 GPA goal an absolute reality!"
+                text: "List out your immediate goals or course assignments directly below the clock. Hit start, close distractions, protect your immediate time window and let's go make that 5.0 GPA goal an absolute reality!"
             }
         ];
 

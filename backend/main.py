@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import datetime
-import smtplib
+# import smtplib
 import bcrypt
 import jwt
 import psycopg2
@@ -28,7 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- CONFIGURATION CONSTANTS FROM ENV ---
+# --- CONFIGURATION CONSTANTS FROM ENV WITH A LOCAL FALLBACK SYSTEM---
 JWT_SECRET = os.getenv("JWT_SECRET", "a_local_fallback_for_development_only")
 JWT_ALGORITHM = "HS256"
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500/frontend")
@@ -189,7 +189,7 @@ class AnalyticsLogCreate(BaseModel):
 
 
 
-#  AUTHENTICATION MANAGEMENT GATEWAY ENDPOINTS
+# AUTHENTICATION MANAGEMENT GATEWAY ENDPOINTS
 @app.post("/api/signup")
 def signup(user: UserSignUp):
     conn = get_db_connection()
@@ -222,7 +222,7 @@ def signup(user: UserSignUp):
                 <div style="max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid #b87363; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
                     <h3 style="color: #b87363; margin-top: 0; font-size: 20px;">Welcome to Pomora, {user.name}</h3>
                     <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6;">
-                        Please click the secure link below to verify your email address and activate your production dashboard profile:
+                        Please click the link below to verify your email address and activate your production dashboard profile for syncing across all your devices.
                     </p>
                     <p style="margin: 30px 0;">
                         <a href="{verification_link}" style="background:#b87363; color:white; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight: bold; display:inline-block;">
@@ -236,7 +236,7 @@ def signup(user: UserSignUp):
         """
         
         # ==========================================================================
-        #  PRODUCTION ENGINE: MAILJET OUTBOUND DISPATCH (SIGNUP ACTIVATION)
+        # MAILJET (SIGNUP ACTIVATION)
         # ==========================================================================
         mj_key = os.environ.get("MAILJET_API_KEY")
         mj_secret = os.environ.get("MAILJET_SECRET_KEY")
@@ -304,11 +304,11 @@ def verify_account(email: str, token: str):
         
         # 3. Compile an authentic responsive founder onboarding content template layout
         walkthrough_html = f"""
-            <div style="font-family: sans-serif; background-color: #fcf8f2; padding: 40px 15px; color: #4a4a4a;">
+            <div style="font-family: cursive, sans-serif; background-color: #fcf8f2; padding: 40px 15px; color: #4a4a4a;">
                 <div style="max-width: 550px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid rgba(184, 115, 99, 0.15); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-                    <h3 style="color: #b87363; margin-top: 0; font-size: 22px;">Hey {user_name}, welcome to Pomora! 👋</h3>
+                    <h3 style="color: #b87363; margin-top: 0; font-size: 22px;">Hey {user_name}, welcome to Pomora.</h3>
                     <p style="font-size: 15px; line-height: 1.6;">
-                        Your account is officially active! I built Pomora because as a student, managing deep work focus blocks while trying to balance an elite academic performance is incredibly demanding. This app is designed to streamline your daily tasks and automate your workflow intervals so you can hit your highest targets efficiently.
+                        Your account is officially active. I built Pomora because as a student, managing deep work focus blocks while trying to balance an elite academic performance is incredibly demanding. This app is designed to streamline your daily tasks and automate your workflow intervals so you can hit your highest targets efficiently.
                     </p>
                     <h4 style="color: #333333; margin-bottom: 8px; font-size: 16px;">Quick Walkthrough to Get Started:</h4>
                     <ul style="padding-left: 20px; font-size: 14px; line-height: 1.6; margin-top: 0;">
@@ -595,7 +595,7 @@ def get_dashboard_analytics(range_type: str = "7days", token_data: dict = Depend
 
 
 
-#  PUBLIC CORE HEALTH MONITORING ENDPOINT
+# PUBLIC CORE HEALTH MONITORING ENDPOINT
 @app.api_route("/api/health", methods=["GET", "HEAD"])
 def database_and_server_health_check(request: Request):
     """Public diagnostic health checkpoint for Render uptime monitors."""
