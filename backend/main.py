@@ -218,7 +218,7 @@ def signup(user: UserSignUp):
         verification_link = f"{FRONTEND_URL}/verify.html?email={user.email}&token={verification_token}"
         
         html_template = f"""
-            <div style="font-family: sans-serif; background-color: #fcf8f2; padding: 30px; text-align: center;">
+            <div style="font-family: cursive, sans-serif; background-color: #fcf8f2; padding: 30px; text-align: center;">
                 <div style="max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; border: 1px solid #b87363; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
                     <h3 style="color: #b87363; margin-top: 0; font-size: 20px;">Welcome to Pomora, {user.name}</h3>
                     <p style="color: #4a4a4a; font-size: 15px; line-height: 1.6;">
